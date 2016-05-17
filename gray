@@ -84,7 +84,7 @@ class Lexer
       end
 
       @token_so_far = ''
-      while @i < @src.length && @src[@i] != "\n" && @src[@i] != ']'
+      while @i < @src.length && @src[@i] != ']'
         @token_so_far << @src[@i]
         @i += 1
       end
