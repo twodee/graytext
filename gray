@@ -46,6 +46,8 @@ class Lexer
       get_attributes
     elsif @state == :style_name
       get_style_name
+    elsif @state == :inline_code
+      get_token_after_backtick
     elsif @state == :style_lines
       get_style_lines
     elsif @state == :eatspace
@@ -237,6 +239,7 @@ class Lexer
       when '*'
         get_token_after_asterisk
       when '`'
+        @state = :inline_code
         Token.new :BACKTICK, @token_so_far
       when '['
         @state = :command
@@ -247,6 +250,23 @@ class Lexer
         get_token_after_dash
       else
         get_token_content
+    end
+  end
+
+  def get_token_after_backtick
+    c = src[@i]
+    @i += 1
+    @token_so_far << c
+
+    if c == '`'
+      @state = :default
+      Token.new :BACKTICK, @token_so_far
+    else
+      while @i < @src.length && @src[@i] != '`'
+        @token_so_far << @src[@i]
+        @i += 1
+      end
+      Token.new :CODE, @token_so_far
     end
   end
 
@@ -316,6 +336,10 @@ class Parser
         end
       end
     end
+  end
+
+  def entitize code
+    code.gsub(/&/, '&amp;').gsub(/</, '&lt;').gsub(/>/, '&gt;')
   end
 
   def parse
@@ -507,7 +531,11 @@ EOF
         @i += 1
         dst += '<code>'
         @is_in_backtick = true
-        dst += content
+        if @tokens[@i].type != :CODE
+          raise "expected backtick, found #{@tokens[@i].inspect}"
+        end
+        dst += entitize(@tokens[@i].text)
+        @i += 1
         if @tokens[@i].type == :BACKTICK
           @i += 1
         else
@@ -583,6 +611,14 @@ EOF
             else
               dst += "<iframe src=\"#{attributes['src']}\"#{s}>"
             end
+          elsif command == "youtube"
+            attributes['src'].gsub!(/youtu\.be/, 'www.youtube.com/embed')
+            s = attributes.map { |key, value| key == 'src' ? '' : " #{key}=\"#{value}\"" }.join
+            if @target == 'wordpress'
+              dst += "[frame src=\"#{attributes['src']}\"#{s} frameborder=\"0\" allowfullscreen]"
+            else
+              dst += "<iframe src=\"#{attributes['src']}\"#{s} frameborder=\"0\" allowfullscreen>"
+            end
           elsif command == "image"
             s = attributes.map { |key, value| (key == 'src' || key == 'selflink') ? '' : " #{key}=\"#{value}\"" }.join
             # TODO, if src is not relative, don't prefix it
@@ -627,7 +663,7 @@ EOF
                 end
               else
                 dst += "<pre#{pair_string}>"
-                dst += code
+                dst += entitize(code)
                 dst += '</pre>'
               end
             elsif command == 'lineveil'
