@@ -629,29 +629,35 @@ EOF
           else
             pair_string = attributes.map { |key, value| " #{key}=\"#{value}\"" }.join
 
-            if @tokens[@i].type == :EOL
-              @i += 1
-            else
-              raise "expected EOL, found #{@tokens[@i].type}"
+            if command != 'code' || !attributes.has_key?('file')
+              if @tokens[@i].type == :EOL
+                @i += 1
+              else
+                raise "expected EOL, found #{@tokens[@i].type}"
+              end
             end
 
             if command == 'code'
               code = ''
-              while @i < @tokens.length && (@tokens[@i].type == :CODE || @tokens[@i].type == :EOL)
-                if @tokens[@i].type == :CODE
-                  if @i + 2 < @tokens.length && @tokens[@i + 2].type == :CODE
-                    code += "#{@tokens[@i].text}\n"
+              if attributes.has_key? 'file'
+                code = IO.read(attributes['file'])
+              else
+                while @i < @tokens.length && (@tokens[@i].type == :CODE || @tokens[@i].type == :EOL)
+                  if @tokens[@i].type == :CODE
+                    if @i + 2 < @tokens.length && @tokens[@i + 2].type == :CODE
+                      code += "#{@tokens[@i].text}\n"
+                    else
+                      code += @tokens[@i].text
+                    end
+                    @i += 1
                   else
-                    code += @tokens[@i].text
+                    code += "\n\n"
                   end
-                  @i += 1
-                else
-                  code += "\n\n"
-                end
-                if @tokens[@i].type == :EOL
-                  @i += 1
-                else
-                  raise "expected EOL after code, found #{@tokens[@i].type}"
+                  if @tokens[@i].type == :EOL
+                    @i += 1
+                  else
+                    raise "expected EOL after code, found #{@tokens[@i].type}"
+                  end
                 end
               end
               if attributes.has_key? 'lang'
