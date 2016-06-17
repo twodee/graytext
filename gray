@@ -326,7 +326,7 @@ class Parser
   def initialize tokens, target
     @tokens = tokens
     @target = target
-    @root = ''
+    @root = nil
     @styles = Hash.new
 
     @tokens.each do |token|
@@ -336,6 +336,12 @@ class Parser
         end
       end
     end
+
+    if @target == 'wordpress'
+      @root = Dir.pwd.gsub!(/^.*\/writing/, '/gray/writing')
+    end
+    
+    # puts @root
   end
 
   def entitize code
@@ -357,6 +363,15 @@ body {
 }
   
   </style>
+  <script language="JavaScript">
+
+function autosize(id) {
+  var element = document.getElementById(id);
+  element.width = element.contentWindow.document.body.scrollWidth;
+  element.height = element.contentWindow.document.body.scrollHeight;
+}
+
+  </script>
 </head>
 <body>
 EOF
@@ -604,28 +619,47 @@ EOF
 
           if command == "link"
             dst += "<a href=\"#{attributes['to']}\">#{attributes['title']}</a>"
+            
           elsif command == "frame"
-            s = attributes.map { |key, value| key == 'src' ? '' : " #{key}=\"#{value}\"" }.join
-            if @target == 'wordpress'
-              dst += "[frame src=\"#{attributes['src']}\"#{s}]"
+            s = attributes.map { |key, value| ['src', 'autosize'].member?(key) ? '' : " #{key}=\"#{value}\"" }.join
+            if attributes.has_key?('autosize') && attributes['autosize'] == 'true' && attributes.has_key?('id')
+              if @target == 'wordpress'
+                autosize_attribute = " autosize=\"true\""
+              else
+                autosize_attribute = " onload=\"autosize('#{attributes['id']}')\"";
+              end
             else
-              dst += "<iframe src=\"#{attributes['src']}\"#{s}>"
+              autosize_attribute = ""
             end
+            if @target == 'wordpress'
+              src = attributes['src']
+              if src !~ /https?:\/\// && @root
+                src = "#{@root}/#{src}"
+              end
+              dst += "[frame src=\"#{src}\"#{s}#{autosize_attribute}]"
+            else
+              dst += "<iframe src=\"#{attributes['src']}\"#{s}#{autosize_attribute}></iframe>"
+            end
+
           elsif command == "youtube"
             attributes['src'].gsub!(/youtu\.be/, 'www.youtube.com/embed')
             s = attributes.map { |key, value| key == 'src' ? '' : " #{key}=\"#{value}\"" }.join
             if @target == 'wordpress'
               dst += "[frame src=\"#{attributes['src']}\"#{s} frameborder=\"0\" allowfullscreen]"
             else
-              dst += "<iframe src=\"#{attributes['src']}\"#{s} frameborder=\"0\" allowfullscreen>"
+              dst += "<iframe src=\"#{attributes['src']}\"#{s} frameborder=\"0\" allowfullscreen></iframe>"
             end
           elsif command == "image"
             s = attributes.map { |key, value| (key == 'src' || key == 'selflink') ? '' : " #{key}=\"#{value}\"" }.join
             # TODO, if src is not relative, don't prefix it
             is_selflink = attributes.has_key? 'selflink' && attributes['selflink']
-            dst += "<a href=\"#{@root}/#{attributes['src']}\">"
+            if is_selflink
+              dst += "<a href=\"#{@root}/#{attributes['src']}\">"
+            end
             dst += "<img src=\"#{@root}/#{attributes['src']}\"#{s}>"
-            dst += "</a>"
+            if is_selflink
+              dst += "</a>"
+            end
           else
             pair_string = attributes.map { |key, value| " #{key}=\"#{value}\"" }.join
 
@@ -715,7 +749,7 @@ EOF
     <textarea name="src">#{code}</textarea>
     <input type="submit"/>
   </form>
-  <iframe name=\"mup_frame_#{attributes['id']}\" src=\"\" width=\"#{attributes['width']}\" height=\"#{attributes['height']}\">
+  <iframe name=\"mup_frame_#{attributes['id']}\" src=\"\" width=\"#{attributes['width']}\" height=\"#{attributes['height']}\"></iframe>
   <script>                                                                                                                                                                        
     document.getElementById('mup_form_#{attributes['id']}').submit();
   </script>
