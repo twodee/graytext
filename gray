@@ -24,7 +24,7 @@ class Lexer
     token = nil
     until token && token.type == :EOF
       token = get_token
-      # puts "#{@state.inspect} #{token.inspect}"
+      STDERR.puts "#{@state.inspect} #{token.inspect}"
       @tokens << token
     end
   end
@@ -652,7 +652,7 @@ EOF
           elsif command == "image"
             s = attributes.map { |key, value| (key == 'src' || key == 'selflink') ? '' : " #{key}=\"#{value}\"" }.join
             # TODO, if src is not relative, don't prefix it
-            is_selflink = attributes.has_key? 'selflink' && attributes['selflink']
+            is_selflink = attributes.has_key?('selflink') && attributes['selflink'] == 'true'
             if is_selflink
               dst += "<a href=\"#{@root}/#{attributes['src']}\">"
             end
@@ -724,24 +724,24 @@ EOF
               end
               dst += '</pre>'
             elsif command == 'madeup'
-              ['id', 'weight', 'height'].each do |key|
+              ['id', 'width', 'height'].each do |key|
                 if !attributes.has_key? key
                   raise "madeup snippet must have #{key} attribute!"
                 end
               end
 
               code = ''
-              while @i < @tokens.length && @tokens[@i].type == :CODE
+              while @i < @tokens.length && (@tokens[@i].type != :RIGHT_BRACKET) # || (@tokens[@i].type == :EOL && @i + 1 < @tokens.length && @tokens[@i + 1] !)
                 code += @tokens[@i].text
-                if @i + 2 < @tokens.length && @tokens[@i + 2].type == :CODE
-                  code += "\n"
-                end
+                # if @i + 2 < @tokens.length && @tokens[@i + 2].type == :CODE
+                  # code += "\n"
+                # end
                 @i += 1
-                if @tokens[@i].type == :EOL
-                  @i += 1
-                else
-                  raise "expected EOL after code, found #{@tokens[@i].type}"
-                end
+                # if @tokens[@i].type == :EOL
+                  # @i += 1
+                # else
+                  # raise "expected EOL after code, found #{@tokens[@i].type}"
+                # end
               end
 
               if @target == 'wordpress'
@@ -751,7 +751,7 @@ EOF
               else
                 dst += <<EOF
 <div id="mup_#{attributes['id']}">
-  <form style="display: none" id="mup_form_#{attributes['id']}" target="mup_frame_#{attributes['id']}" action="http://embed.madeup.xyz:9013" method="post">
+  <form style="display: none" id="mup_form_#{attributes['id']}" target="mup_frame_#{attributes['id']}" action="http://embed.madeup.xyz" method="post">
     <textarea name="src">#{code}</textarea>
     <input type="submit"/>
   </form>
