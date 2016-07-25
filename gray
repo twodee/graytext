@@ -17,14 +17,14 @@ class Lexer
   end
 
   def lex
-    @state = :linestart
+    @states = [:default, :linestart]
     @tokens = []
     @i = 0
 
     token = nil
     until token && token.type == :EOF
       token = get_token
-      STDERR.puts "#{@state.inspect} #{token.inspect}"
+      STDERR.puts "#{token.inspect} -- now in #{@states[-1].inspect}"
       @tokens << token
     end
   end
@@ -34,27 +34,29 @@ class Lexer
 
     if @i >= src.length
       Token.new :EOF
-    elsif @state == :linestart
+    elsif @states[-1] == :linestart
       get_linestart_token
-    elsif @state == :default
+    elsif @states[-1] == :default
       get_default_token
-    elsif @state == :blockcode
+    elsif @states[-1] == :table
+      get_table_token
+    elsif @states[-1] == :blockcode
       get_block_code_token
-    elsif @state == :command
+    elsif @states[-1] == :command
       get_command
-    elsif @state == :attributes
+    elsif @states[-1] == :attributes
       get_attributes
-    elsif @state == :style_name
+    elsif @states[-1] == :style_name
       get_style_name
-    elsif @state == :inline_code
+    elsif @states[-1] == :inline_code
       get_token_after_backtick
-    elsif @state == :style_lines
+    elsif @states[-1] == :style_lines
       get_style_lines
-    elsif @state == :eatspace
+    elsif @states[-1] == :eatspace
       until @i >= src.length || @src[@i] != ' '
         @i += 1
       end
-      @state = :default
+      @states.pop
       get_token
     end
   end
@@ -66,7 +68,7 @@ class Lexer
       while @src[@i] == ' '
         @i += 1
       end
-      @state = :style_name
+      @states[-1] = :style_name
       Token.new :STYLE, $&
     elsif @src[@i] =~ /[A-Za-z0-9]/
       while @i < @src.length && @src[@i] =~ /[A-Za-z0-9]/
@@ -74,7 +76,7 @@ class Lexer
         @i += 1
       end
       @id = @token_so_far
-      @state = :attributes
+      @states[-1] = :attributes
       Token.new :IDENTIFIER, @token_so_far
     elsif @src[@i] == '"'
       # Skip over ".
@@ -91,7 +93,7 @@ class Lexer
         @i += 1
       end
 
-      @state = :default
+      @states[-1] = :default
       Token.new :COMMENT, @token_so_far
     else
       raise "I dunno #{@src[@i..-1]}"
@@ -114,14 +116,14 @@ class Lexer
       raise "ouch"
     end
 
-    @state = :style_lines
+    @states[-1] = :style_lines
     Token.new :IDENTIFIER, @token_so_far
   end
 
   def get_style_lines
     if @src[@i] == ']'
       @i += 1
-      @state = :default
+      @states[-1] = :default
       Token.new :RIGHT_BRACKET, ']'
     else
       @token_so_far = ''
@@ -147,17 +149,19 @@ class Lexer
 
     if @src[@i] == "\n"
       if @id == 'code' || @id == 'lineveil' || @id == 'madeup'
-        @state = :blockcode
+        @states[-1] = :blockcode
       elsif @id == 'block'
-        @state = :linestart
+        @states[-1] = :linestart
+      elsif @id == 'table'
+        @states[-1] = :table
       else
-        @state = :default
+        @states[-1] = :default
       end
       @i += 1
       Token.new :EOL, "\n"
     elsif @src[@i] == ']'
       @i += 1
-      @state = :default
+      @states[-1] = :default
       Token.new :RIGHT_BRACKET, ']'
     elsif @src[@i] == '='
       @i += 1
@@ -166,6 +170,10 @@ class Lexer
       @i += 1
       value = ''
       while @i < @src.length && @src[@i] != '"'
+        # Allow escaped.
+        if @i < @src.length - 1 && @src[@i] == '\\'
+          @i += 1
+        end
         @token_so_far << @src[@i]
         @i += 1
       end
@@ -191,7 +199,7 @@ class Lexer
 
     if rest =~ /\A(\d+)\.\s+/
       @i += $&.length
-      @state = :default
+      @states.pop
       Token.new :INT, @token_so_far
     elsif rest =~ /\A-{5,}\r?\n/
       @i += $&.length
@@ -205,17 +213,21 @@ class Lexer
         when ' '
           get_token_indent
         when '-'
-          @state = :eatspace
+          @states[-1] = :eatspace
           Token.new :BULLET, @token_so_far
         when '#'
           get_token_after_hash
         else
           @i -= 1
           @token_so_far = ''
-          @state = :default
+          @states.pop
           get_default_token
       end
     end
+  end
+
+  def get_table_token
+    get_default_token
   end
 
   def get_token_after_hash
@@ -223,7 +235,7 @@ class Lexer
       @token_so_far << @src[@i]
       @i += 1
     end
-    @state = :eatspace
+    @states.push :eatspace
     Token.new :HASHES, @token_so_far
   end
 
@@ -234,23 +246,41 @@ class Lexer
 
     case c
       when "\n"
-        @state = :linestart
+        @states.push :linestart
         Token.new :EOL, @token_so_far
       when '*'
         get_token_after_asterisk
       when '`'
-        @state = :inline_code
+        @states.push :inline_code
         Token.new :BACKTICK, @token_so_far
       when '['
-        @state = :command
+        @states.push :command
         Token.new :LEFT_BRACKET, @token_so_far
       when ']'
+        @states.pop
         Token.new :RIGHT_BRACKET, @token_so_far
       when '-'
         get_token_after_dash
+      when '\\'
+        get_token_after_backslash
+      when '|'
+        if @states[-1] == :table
+          Token.new :COLUMN_SEPARATOR, @token_so_far 
+        else
+          get_token_content
+        end
       else
         get_token_content
     end
+  end
+
+  def get_token_after_backslash
+    # Replace the slash we just read with the succeeding character.
+    if @i < @src.length
+      @token_so_far[-1] = src[@i]
+      @i += 1
+    end
+    get_default_token
   end
 
   def get_token_after_backtick
@@ -259,7 +289,7 @@ class Lexer
     @token_so_far << c
 
     if c == '`'
-      @state = :default
+      @states.pop
       Token.new :BACKTICK, @token_so_far
     else
       while @i < @src.length && @src[@i] != '`'
@@ -291,7 +321,7 @@ class Lexer
   def get_block_code_token
     if @src[@i..-1] =~ /\A([ \t]*\])/
       @i += $1.length
-      @state = :default
+      @states.pop
       Token.new :RIGHT_BRACKET, ']'
     elsif @src[@i] == "\n"
       @i += 1
@@ -306,7 +336,11 @@ class Lexer
   end
 
   def get_token_content
-    while @i < @src.length && @src[@i] != "\n" && @src[@i] != '`' && @src[@i] != '*' && @src[@i] != '[' && @src[@i] != '-'
+    while @i < @src.length && @src[@i] != "\n" && @src[@i] != '`' && @src[@i] != '*' && @src[@i] != '[' && @src[@i] != '-' && (@states[-1] != :table || @src[@i] != '|')
+      # Skip
+      if @src[@i] == '\\' && @i + 1 < @src.length
+        @i += 1
+      end
       @token_so_far << @src[@i]
       @i += 1
     end
@@ -619,6 +653,52 @@ EOF
 
           if command == "link"
             dst += "<a href=\"#{attributes['to']}\">#{attributes['title']}</a>"
+
+          elsif command == "table"
+            dst += "<table>\n"
+            if @tokens[@i].type == :EOL
+              @i += 1
+            else
+              raise 'expected EOL'
+            end
+
+            irow = 0
+
+            while @tokens[@i].type != :RIGHT_BRACKET
+              cell_letter = (irow == 0 && attributes.has_key?('headers') && attributes['headers'] == 'true') ? 'h' : 'd'
+              icolumn = 0
+
+              def get_cell_style attributes, col
+                if attributes.has_key?('align') && col < attributes['align'].length
+                  case attributes['align'][col]
+                    when 'r'
+                      "text-align: right"
+                    when 'c'
+                      "text-align: center"
+                    else
+                      "text-align: left"
+                  end
+                else
+                  "text-align: left"
+                end
+              end
+
+              dst += "  <tr>\n    <t#{cell_letter} style=\"#{get_cell_style attributes, icolumn}\">\n"
+              while @tokens[@i].type != :EOL
+                while @tokens[@i].type != :COLUMN_SEPARATOR && @tokens[@i].type != :EOL
+                  dst += content
+                end
+                if @tokens[@i].type == :COLUMN_SEPARATOR
+                  icolumn += 1
+                  dst += "\n    </t#{cell_letter}>\n    <t#{cell_letter} style=\"#{get_cell_style attributes, icolumn}\">\n"
+                  @i += 1
+                end
+              end
+              dst += "\n    </t#{cell_letter}>\n  </tr>\n"
+              @i += 1
+              irow += 1
+            end
+            dst += "</table>"
             
           elsif command == "frame"
             s = attributes.map { |key, value| ['src', 'autosize'].member?(key) ? '' : " #{key}=\"#{value}\"" }.join
@@ -650,8 +730,16 @@ EOF
               dst += "<iframe src=\"#{attributes['src']}\"#{s} frameborder=\"0\" allowfullscreen></iframe>"
             end
           elsif command == "image"
-            s = attributes.map { |key, value| (key == 'src' || key == 'selflink') ? '' : " #{key}=\"#{value}\"" }.join
+            s = attributes.map { |key, value| (key == 'src' || key == 'selflink' || (key == 'style' && attributes.has_key?('caption'))) ? '' : " #{key}=\"#{value}\"" }.join
             # TODO, if src is not relative, don't prefix it
+
+            if attributes.has_key?('caption')
+              # if !attributes.has_key?('width')
+                # raise 'caption, but no width!'
+              # end
+              dst += "<div style=\"#{attributes['style']}\">"
+            end
+
             is_selflink = attributes.has_key?('selflink') && attributes['selflink'] == 'true'
             if is_selflink
               dst += "<a href=\"#{@root}/#{attributes['src']}\">"
@@ -659,6 +747,11 @@ EOF
             dst += "<img src=\"#{@root}/#{attributes['src']}\"#{s}>"
             if is_selflink
               dst += "</a>"
+            end
+
+            if attributes.has_key? 'caption'
+              dst += "<br><i><small>" + attributes['caption'] + "</small></i></span>"
+              dst += "</div>"
             end
           else
             pair_string = attributes.map { |key, value| " #{key}=\"#{value}\"" }.join
