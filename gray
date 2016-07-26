@@ -465,6 +465,14 @@ EOF
     dst
   end
 
+  def just_saw_comment
+    i_last_non_eol = @i
+    while i_last_non_eol > 0 && @tokens[i_last_non_eol].type == :EOL
+      i_last_non_eol -= 1
+    end
+    i_last_non_eol >= 2 && @tokens[i_last_non_eol - 2].type == :LEFT_BRACKET && @tokens[i_last_non_eol - 1].type == :COMMENT && @tokens[i_last_non_eol].type == :RIGHT_BRACKET
+  end
+
   def line
     dst = ''
 
@@ -495,8 +503,10 @@ EOF
       dst += list 0
     else
       dst += content
-      # TODO not if only comment
-      dst += "\n"
+
+      # Don't add a linebreak after a comment tag.
+      dst += "\n" if !just_saw_comment
+
       if @tokens[@i].type == :EOL
         @i += 1
       else
@@ -894,6 +904,11 @@ EOF
 
         if @tokens[@i].type == :RIGHT_BRACKET
           @i += 1
+
+          # TODO
+          # if @tokens[@i - 2].type == :COMMENT && @i < @tokens.length && @tokens[@i].type == :EOL
+            # @i += 1
+          # end
         else
           puts dst
           raise "expected ], found #{@tokens[@i].inspect}"
