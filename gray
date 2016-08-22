@@ -148,7 +148,7 @@ class Lexer
     end
 
     if @src[@i] == "\n"
-      if @id == 'code' || @id == 'lineveil' || @id == 'madeup'
+      if @id == 'code' || @id == 'lineveil' || @id == 'madeup' || @id == 'latex' # Any code blocks
         @states[-1] = :blockcode
       elsif @id == 'block'
         @states[-1] = :linestart
@@ -809,6 +809,44 @@ EOF
                 dst += entitize(code)
                 dst += '</pre>'
               end
+            elsif command == 'latex'
+              ['id'].each do |key|
+                if !attributes.has_key? key
+                  raise "latex snippet must have #{key} attribute!"
+                end
+              end
+
+              latex_source = <<'EOF'
+\documentclass[fleqn]{article}
+\usepackage{mathtools}
+\usepackage{amsmath}
+\usepackage[active,tightpage,textmath,displaymath,pdftex]{preview}
+\begin{document}
+\makeatletter\setlength\@mathmargin{0pt}\makeatother
+EOF
+              while @i < @tokens.length && @tokens[@i].type == :CODE
+                latex_source += @tokens[@i].text
+                @i += 1
+
+                if @tokens[@i].type == :EOL
+                  @i += 1
+                else
+                  raise "expected EOL after latex, found #{@tokens[@i].type}"
+                end
+              end
+              latex_source += "\n\\end{document}"
+
+              # IO.popen("pdflatex -jobname=#{attributes['id']} && gs -sDEVICE=png16m -dTextAlphaBits=4 -r144 -dGraphicsAlphaBits=4 -dSAFER -q -dNOPAUSE -dBATCH -sOutputFile=#{attributes['id']}.png #{attributes['id']}.pdf && mogrify -quality 100 -resize #{attributes['width']}x#{attributes['height']} #{attributes['id']}.png", 'w+') do |pipe|
+              IO.popen("pdflatex -jobname=#{attributes['id']} && (pdftoppm -rx 400 -ry 400 -png #{attributes['id']}.pdf > #{attributes['id']}.png)", 'w+') do |pipe|
+                pipe.write(latex_source)
+                pipe.close_write
+                pipe.read.split("\n").each do |line|
+                  STDERR.puts line
+                end
+              end
+
+              dst += "<img src=\"#{@root}/#{attributes['id']}.png\"#{s} style=\"#{@styles['latex_math']}\">"
+
             elsif command == 'lineveil'
               dst += "<pre#{pair_string}>"
               li = 0
