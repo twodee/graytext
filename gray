@@ -1,5 +1,20 @@
 #!/usr/bin/env ruby
 
+$config = Hash.new
+
+dir = File.expand_path(ARGV[0])
+loop do
+  dir = File.dirname(dir)
+  rc_file = dir + '/.grayrc'
+  if File.exists?(rc_file)
+    lines = IO.read(rc_file).lines.grep(/(.*?)\s*=\s*(.*?)/)
+    $config = lines.map { |line| line.chomp.split(/\s*=\s*/) }.to_h
+  end
+  break if dir == '/'
+end
+
+STDERR.puts $config
+
 class Token
   attr_reader :type, :text
 
@@ -235,8 +250,16 @@ class Lexer
       @token_so_far << @src[@i]
       @i += 1
     end
+
+    @states.push :default
     @states.push :eatspace
-    Token.new :HASHES, @token_so_far
+
+    if @i < @src.length && @src[@i] == '.'
+      @i += 1
+      Token.new :COUNTED_HASHES, @token_so_far
+    else
+      Token.new :HASHES, @token_so_far
+    end
   end
 
   def get_default_token
@@ -331,7 +354,7 @@ class Lexer
         @token_so_far << @src[@i]
         @i += 1
       end
-      Token.new :CODE, @token_so_far
+      Token.new :CODE, @token_so_far.gsub(/\A\\\]/, ']')
     end
   end
 
@@ -362,6 +385,7 @@ class Parser
     @target = target
     @root = nil
     @styles = Hash.new
+    @counters = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 
     @tokens.each do |token|
       if token.type == :COMMENT
@@ -372,7 +396,7 @@ class Parser
     end
 
     if @target == 'wordpress'
-      @root = Dir.pwd.gsub!(/^.*\/writing/, '/gray/writing')
+      @root = $config['root'] #Dir.pwd.gsub!(/^.*\/writing/, '/gray/writing')
     end
     
     # puts @root
@@ -476,10 +500,19 @@ EOF
   def line
     dst = ''
 
-    if @tokens[@i].type == :HASHES
+    if @tokens[@i].type == :HASHES || @tokens[@i].type == :COUNTED_HASHES
       rank = @tokens[@i].text.length
+      real_rank = rank
       rank += 2 if @target == 'wordpress'
       dst += "<h#{rank}>"
+      if @tokens[@i].type == :COUNTED_HASHES
+        # lesser ranks go back to 0
+        for ri in real_rank...@counters.size
+          @counters[ri] = 0
+        end
+        @counters[real_rank - 1] += 1
+        dst += @counters.take(real_rank).map(&:to_s).join('.') + '. '
+      end
       @i += 1
       dst += content
       dst += "</h#{rank}>\n"
@@ -522,7 +555,7 @@ EOF
   end
 
   def first_of_line? type
-    ([:HASHES, :LINE, :INDENT, :BULLET, :INT, :EOL].member? type) || first_of_content?(type)
+    ([:COUNTED_HASHES, :HASHES, :LINE, :INDENT, :BULLET, :INT, :EOL].member? type) || first_of_content?(type)
   end
 
   def parse_attributes
@@ -662,7 +695,9 @@ EOF
           end
 
           if command == "link"
-            dst += "<a href=\"#{attributes['to']}\">#{attributes['title']}</a>"
+            blacklist = %w{to title}
+            attributes_string = attributes.reject { |key, _| blacklist.include? key }.map { |key, value| " #{key}=\"#{value}\"" }.join
+            dst += "<a href=\"#{attributes['to']}\"#{attributes_string}>#{attributes['title']}</a>"
 
           elsif command == "table"
             dst += "<table>\n"
