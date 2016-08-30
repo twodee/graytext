@@ -2,18 +2,21 @@
 
 $config = Hash.new
 
-dir = File.expand_path(ARGV[0])
+dir = File.expand_path(ARGV[1])
+$offset = ''
 loop do
   dir = File.dirname(dir)
   rc_file = dir + '/.grayrc'
   if File.exists?(rc_file)
     lines = IO.read(rc_file).lines.grep(/(.*?)\s*=\s*(.*?)/)
     $config = lines.map { |line| line.chomp.split(/\s*=\s*/) }.to_h
+    break
   end
   break if dir == '/'
+  $offset = File.basename(dir) + '/' + $offset
 end
 
-STDERR.puts $config
+$offset.gsub!(/\/$/, '')
 
 class Token
   attr_reader :type, :text
@@ -396,7 +399,7 @@ class Parser
     end
 
     if @target == 'wordpress'
-      @root = $config['root'] #Dir.pwd.gsub!(/^.*\/writing/, '/gray/writing')
+      @root = $config['root'] + '/' + $offset
     end
     
     # puts @root
@@ -409,30 +412,7 @@ class Parser
   def parse
     dst = ''
     if @target == 'html'
-      dst += <<EOF
-<!doctype html>
-<head>
-  <title>Foo</title>
-  <style>
-
-body {
-  width: 600px;
-  font-family: Arial;
-}
-  
-  </style>
-  <script language="JavaScript">
-
-function autosize(id) {
-  var element = document.getElementById(id);
-  element.width = element.contentWindow.document.body.scrollWidth;
-  element.height = element.contentWindow.document.body.scrollHeight;
-}
-
-  </script>
-</head>
-<body>
-EOF
+      dst += IO.read(File.dirname(__FILE__) + '/bubbles_header.html')
     end
 
     @is_in_backtick = false
@@ -445,7 +425,7 @@ EOF
     end
 
     if @target == 'html'
-      dst += "</body>\n</html>\n"
+      dst += IO.read(File.dirname(__FILE__) + '/bubbles_footer.html')
     end
 
     dst
