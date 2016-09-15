@@ -2,21 +2,84 @@
 
 $config = Hash.new
 
-dir = File.expand_path(ARGV[1])
-$offset = ''
-loop do
-  dir = File.dirname(dir)
-  rc_file = dir + '/.grayrc'
-  if File.exists?(rc_file)
-    lines = IO.read(rc_file).lines.grep(/(.*?)\s*=\s*(.*?)/)
-    $config = lines.map { |line| line.chomp.split(/\s*=\s*/) }.to_h
-    break
+command = ARGV.shift
+
+def configure path
+  dir = File.expand_path(path)
+  $offset = ''
+  loop do
+    dir = File.dirname(dir)
+    rc_file = dir + '/.grayrc'
+    if File.exists?(rc_file)
+      lines = IO.read(rc_file).lines.grep(/(.*?)\s*=\s*(.*?)/)
+      $config = lines.map { |line| line.chomp.split(/\s*=\s*/) }.to_h
+      break
+    end
+    break if dir == '/'
+    $offset = File.basename(dir) + '/' + $offset
   end
-  break if dir == '/'
-  $offset = File.basename(dir) + '/' + $offset
+
+  $offset.gsub!(/\/$/, '')
 end
 
-$offset.gsub!(/\/$/, '')
+if command == 'upload'
+  ARGV.each do |path|
+    configure path
+
+    dir = "/var/www/html/#{$config['root']}/#{$offset}".gsub(/\/{2,}/, '/')
+
+    command = "ssh twodee 'mkdir -p #{dir} && umask 0017 && chmod -R g+X /var/www/html/#{$config['root']}/#{$offset.gsub(/\/.*$/, '')}' && scp #{path} twodee:#{dir} && ssh twodee 'chmod g+r #{dir}/#{File.basename(path)}'"
+    puts command
+    `#{command}`
+
+    puts
+  end
+
+  exit 0
+elsif command == 'code'
+  path = ARGV.shift 
+  code = ''
+  ARGV.each_with_index do |codepath, i|
+    if i > 0
+      code += "\n\n"
+    end
+    code += "## #{File.basename(codepath)}\n\n"
+    language = case File.extname(codepath)
+      when '.java'
+        'java'
+      when '.mup'
+        'madeup'
+      when '.cpp', '.h'
+        'cpp'
+      when '.rb'
+        'ruby'
+      when '.zsh'
+        'zsh'
+      else
+        ''
+      end
+    language = " lang=#{language}" if !language.empty?
+    code += "[code#{language}\n"
+    code += IO.read(codepath).gsub(/\t/, '  ').chomp
+    code += "\n]\n"
+  end
+
+  text = IO.read(path)
+  if !text.gsub!(/(?<=\[" CODE START\]\n).*?(?=\n\[" CODE END\])/m, code)
+    text.sub!(/\s*\Z/, "\n\n[\" CODE START]\n#{code}\n[\" CODE END]\n")
+  end
+
+  File.open(path, 'w') do |file|
+    file.write(text)
+  end
+
+  exit 0
+
+end
+
+target = ARGV[0]
+path = ARGV[1]
+configure path
 
 class Token
   attr_reader :type, :text
@@ -42,7 +105,7 @@ class Lexer
     token = nil
     until token && token.type == :EOF
       token = get_token
-      STDERR.puts "#{token.inspect} -- now in #{@states[-1].inspect}"
+      STDERR.puts "#{token.inspect} -- now in #{@states[-1]} -- #{@states.inspect}"
       @tokens << token
     end
   end
@@ -239,6 +302,7 @@ class Lexer
           @i -= 1
           @token_so_far = ''
           @states.pop
+          @states.push :default
           get_default_token
       end
     end
@@ -412,7 +476,10 @@ class Parser
   def parse
     dst = ''
     if @target == 'html'
-      dst += IO.read(File.dirname(__FILE__) + '/bubbles_header.html')
+      header = IO.read(File.dirname(__FILE__) + '/bubbles_header.html')
+      header.gsub!(/(?<=<style>)(?=<\/style>)/, IO.read(File.dirname(__FILE__) + '/style.css'))
+      header.gsub!(/(?<=<script>)(?=<\/script>)/, IO.read(File.dirname(__FILE__) + '/utilities.js'))
+      dst += header
     end
 
     @is_in_backtick = false
@@ -586,19 +653,23 @@ class Parser
     @tokens[@i].type == :LEFT_BRACKET && @tokens[@i + 1].type == :IDENTIFIER && @tokens[@i + 1].text == 'block'
   end
 
+  def is_code
+    @tokens[@i].type == :LEFT_BRACKET && @tokens[@i + 1].type == :IDENTIFIER && @tokens[@i + 1].text == 'code'
+  end
+
   def content
     dst = ''
 
     # Need a paragraph?
     # puts "checking before #{@tokens[@i].inspect}"
-    needs_paragraph = count_preceding_linebreaks >= 2 && !is_comment && !is_block && @tokens[@i].type != :EOL # @i - 2 >= 0 && @tokens[@i - 2].type == :EOL && @tokens[@i - 1].type == :EOL
-    # puts needs_paragraph
+    needs_paragraph = (count_preceding_linebreaks >= 2 || @i == 0) && !is_comment && !is_block && !is_code && @tokens[@i].type != :EOL
     dst += "<p>" if needs_paragraph
 
     while first_of_content? @tokens[@i].type
       if @tokens[@i].type == :CONTENT
         dst += @tokens[@i].text
         @i += 1
+        is_first_content = false
       elsif @tokens[@i].type == :BACKTICK
         @i += 1
         dst += '<code>'
@@ -606,7 +677,9 @@ class Parser
         if @tokens[@i].type != :CODE
           raise "expected backtick, found #{@tokens[@i].inspect}"
         end
-        dst += entitize(@tokens[@i].text)
+        dst += entitize(@tokens[@i].text)#.gsub(/ {2,}/) do |match|
+          # '&nbsp;' * match.length
+        # end
         @i += 1
         if @tokens[@i].type == :BACKTICK
           @i += 1
@@ -765,11 +838,16 @@ class Parser
               dst += "<div style=\"#{attributes['style']}\">"
             end
 
+            path = attributes['src']
+            if path !~ /^https?:\/\//
+              path = "#{@root}/#{path}"
+            end
+
             is_selflink = attributes.has_key?('selflink') && attributes['selflink'] == 'true'
             if is_selflink
-              dst += "<a href=\"#{@root}/#{attributes['src']}\">"
+              dst += "<a href=\"#{path}\">"
             end
-            dst += "<img src=\"#{@root}/#{attributes['src']}\"#{s}>"
+            dst += "<img src=\"#{path}\"#{s}>"
             if is_selflink
               dst += "</a>"
             end
@@ -790,6 +868,12 @@ class Parser
             end
 
             if command == 'code'
+              if attributes.has_key?('hide')
+                dst += "<div class=\"indented\">"
+                dst += "<a href=\"#\" class=\"toggler\">#{attributes['hide']}</a>"
+                dst += '<div class="togglee">'
+              end
+
               code = ''
               if attributes.has_key? 'file'
                 code = IO.read(attributes['file'])
@@ -812,18 +896,47 @@ class Parser
                   end
                 end
               end
-              if attributes.has_key? 'lang'
-                IO.popen("coderay -#{attributes['lang']} -div", 'r+') do |pipe|
-                  pipe.puts code
-                  pipe.close_write
-                  code = pipe.read
-                  dst += code
+
+              if attributes.has_key?('scrambled')
+                dst += '<div class="scramblebox">'
+                dst += '<ol class="scrambled">'
+                code.lines.each do |line|
+                  if attributes.has_key? 'lang'
+                    dst += '<li>'
+                    IO.popen("coderay -#{attributes['lang']} -div", 'r+') do |pipe|
+                      pipe.puts line.chomp
+                      pipe.close_write
+                      code = pipe.read
+                      dst += code.chomp
+                    end
+                    dst += '</li>'
+                  else
+                    dst += "<li><pre>#{line.chomp}</pre></li>"
+                  end
                 end
+                dst += '</ol>'
+                dst += '<input type="button" class="scramble" value="Scramble">'
+                dst += '</div>'
               else
-                dst += "<pre#{pair_string}>"
-                dst += entitize(code)
-                dst += '</pre>'
+                if attributes.has_key? 'lang'
+                  IO.popen("coderay -#{attributes['lang']} -div", 'r+') do |pipe|
+                    pipe.puts code
+                    pipe.close_write
+                    code = pipe.read
+                    dst += "<div#{pair_string}>#{code}</div>"
+                  end
+                else
+                  dst += "<pre#{pair_string}>"
+                  dst += entitize(code)
+                  dst += '</pre>'
+                end
               end
+
+              if attributes.has_key?('hide')
+                dst += '</div>'
+                dst += '</div>'
+              end
+
             elsif command == 'latex'
               ['id'].each do |key|
                 if !attributes.has_key? key
@@ -902,7 +1015,7 @@ EOF
 
               if @target == 'wordpress'
                 dst += <<EOF
-<pre>[mup id=#{attributes['id']} width=#{attributes['width']} height=#{attributes['height']}]#{code}[/mup]</pre>
+<pre>[mup id=#{attributes['id']} width=#{attributes['width']} height=#{attributes['height']} frameborder="0"]#{code}[/mup]</pre>
 EOF
               else
                 dst += <<EOF
@@ -911,7 +1024,7 @@ EOF
     <textarea name="src">#{code}</textarea>
     <input type="submit"/>
   </form>
-  <iframe name=\"mup_frame_#{attributes['id']}\" src=\"\" width=\"#{attributes['width']}\" height=\"#{attributes['height']}\"></iframe>
+  <iframe name=\"mup_frame_#{attributes['id']}\" src=\"\" width=\"#{attributes['width']}\" height=\"#{attributes['height']}\" frameborder=\"0\"></iframe>
   <script>                                                                                                                                                                        
     document.getElementById('mup_form_#{attributes['id']}').submit();
   </script>
@@ -931,12 +1044,52 @@ EOF
                 end
               end
               dst += '</blockquote>'
+            elsif command == 'haiku'
+              dst += "<blockquote#{pair_string}>"
+              is_first = true
+              while @i < @tokens.length && (first_of_content? @tokens[@i].type)
+                if !is_first
+                  dst += '<br>'
+                else
+                  is_first = false
+                end
+                dst += content
+                dst += "\n" if @i + 1 < @tokens.length && @tokens[@i + 1].type != :RIGHT_BRACKET
+                if @tokens[@i].type == :EOL
+                  @i += 1
+                else
+                  raise "expected EOL after quote content, found #{@tokens[@i].type}"
+                end
+              end
+              dst += '</blockquote>'
             elsif command == 'block'
+              if attributes.has_key?('hide')
+                dst += "<div class=\"indented\">"
+                dst += "<a href=\"#\" class=\"toggler\">#{attributes['hide']}</a>"
+                if attributes.has_key?('class')
+                  attributes['class'].gsub!(/"?$/, ' togglee')
+                else
+                  attributes['class'] = 'togglee'
+                end
+              end
+
+              pair_string = attributes.map { |key, value| " #{key}=\"#{value}\"" }.join
+
               dst += "<div#{pair_string}>\n"
               while @i < @tokens.length && (first_of_line? @tokens[@i].type)
                 dst += line
               end
               dst += '</div>'
+
+              if attributes.has_key?('hide')
+                dst += '</div>'
+              end
+            elsif command == 'strike'
+              dst += '<strike>'
+              while @i < @tokens.length && (first_of_line? @tokens[@i].type)
+                dst += line
+              end
+              dst += '</strike>'
             elsif command == 'toggle'
               dst += "<div class=\"toggle\"#{pair_string}>"
               while @i < @tokens.length && (first_of_content? @tokens[@i].type)
@@ -1097,8 +1250,8 @@ end
 # ]
 # EOF
 
-src = File.read(ARGV[1])
+src = File.read(path)
 lexer = Lexer.new src
 lexer.lex
-parser = Parser.new lexer.tokens, ARGV[0]
+parser = Parser.new lexer.tokens, target
 puts parser.parse
