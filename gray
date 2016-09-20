@@ -26,9 +26,9 @@ if command == 'upload'
   ARGV.each do |path|
     configure path
 
-    dir = "/var/www/html/#{$config['root']}/#{$offset}".gsub(/\/{2,}/, '/')
+    dir = "/var/www/twodee/#{$config['root']}/#{$offset}".gsub(/\/{2,}/, '/')
 
-    command = "ssh twodee 'mkdir -p #{dir} && umask 0017 && chmod -R g+X /var/www/html/#{$config['root']}/#{$offset.gsub(/\/.*$/, '')}' && scp #{path} twodee:#{dir} && ssh twodee 'chmod g+r #{dir}/#{File.basename(path)}'"
+    command = "ssh twodee 'mkdir -p #{dir} && umask 0017 && chmod -R g+X /var/www/twodee/#{$config['root']}/#{$offset.gsub(/\/.*$/, '')}' && scp #{path} twodee:#{dir} && ssh twodee 'chmod g+r #{dir}/#{File.basename(path)}'"
     puts command
     `#{command}`
 
@@ -41,7 +41,7 @@ elsif command == 'code'
   code = ''
   ARGV.each_with_index do |codepath, i|
     if i > 0
-      code += "\n\n"
+      code += "\n"
     end
     code += "## #{File.basename(codepath)}\n\n"
     language = case File.extname(codepath)
@@ -49,7 +49,7 @@ elsif command == 'code'
         'java'
       when '.mup'
         'madeup'
-      when '.cpp', '.h'
+      when '.cpp', '.h', '.ino'
         'cpp'
       when '.rb'
         'ruby'
@@ -105,7 +105,7 @@ class Lexer
     token = nil
     until token && token.type == :EOF
       token = get_token
-      STDERR.puts "#{token.inspect} -- now in #{@states[-1]} -- #{@states.inspect}"
+      STDERR.puts "#{token.inspect} -- now in #{@states[-1]}"
       @tokens << token
     end
   end
@@ -478,7 +478,9 @@ class Parser
     if @target == 'html'
       header = IO.read(File.dirname(__FILE__) + '/bubbles_header.html')
       header.gsub!(/(?<=<style>)(?=<\/style>)/, IO.read(File.dirname(__FILE__) + '/style.css'))
-      header.gsub!(/(?<=<script>)(?=<\/script>)/, IO.read(File.dirname(__FILE__) + '/utilities.js'))
+      utilities_source = IO.read(File.dirname(__FILE__) + '/utilities.js').gsub(/\\'/, "\\\\\\\\'")
+      STDERR.puts utilities_source
+      header.gsub!(/(?<=<script>)(?=<\/script>)/, utilities_source)
       dst += header
     end
 
@@ -827,6 +829,12 @@ class Parser
             else
               dst += "<iframe src=\"#{attributes['src']}\"#{s} frameborder=\"0\" allowfullscreen></iframe>"
             end
+          elsif command == "timedown"
+            if @target == 'wordpress'
+              dst += "[timedown seconds=#{attributes['seconds']} id=timedown1]"
+            else
+              dst += "<script>generateTimedown(#{attributes['seconds']}, 'timedown1');</script>"
+            end
           elsif command == "image"
             s = attributes.map { |key, value| (key == 'src' || key == 'selflink' || (key == 'style' && attributes.has_key?('caption'))) ? '' : " #{key}=\"#{value}\"" }.join
             # TODO, if src is not relative, don't prefix it
@@ -1034,7 +1042,7 @@ EOF
 
             elsif command == 'quote'
               dst += "<blockquote#{pair_string}>"
-              while @i < @tokens.length && (first_of_content? @tokens[@i].type)
+              while @i < @tokens.length && (first_of_content?(@tokens[@i].type) || @tokens[@i].type == :EOL)
                 dst += content
                 dst += "\n" if @i + 1 < @tokens.length && @tokens[@i + 1].type != :RIGHT_BRACKET
                 if @tokens[@i].type == :EOL
@@ -1054,7 +1062,7 @@ EOF
                   is_first = false
                 end
                 dst += content
-                dst += "\n" if @i + 1 < @tokens.length && @tokens[@i + 1].type != :RIGHT_BRACKET
+                # dst += "\n" if @i + 1 < @tokens.length && @tokens[@i + 1].type != :RIGHT_BRACKET
                 if @tokens[@i].type == :EOL
                   @i += 1
                 else
