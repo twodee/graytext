@@ -4,6 +4,28 @@ function autosize(id) {
   element.height = element.contentWindow.document.body.scrollHeight;
 }
 
+function lineveil() {
+  var tag = $(this).next();
+  if (tag.css('display') == 'none') {
+    tag.next().fadeOut(400, function() {
+      tag.fadeIn(400);
+    });
+  } else {
+    tag.fadeOut(400, function() {
+      tag.next().fadeIn();
+    });
+  }
+
+  // Window scrolls up without this if called by anchor!
+  return false;
+}
+
+$(document).ready(function() {
+  $('span.lineveil').css('display', 'none');
+  $('span.lineveil').after('<span>...</span>');
+  $('a.lineveil').click(lineveil);
+});
+
 function scramble(list) {
   for (var i = list.children.length; i >= 0; --i) {
     list.appendChild(list.children[Math.random() * i | 0]);

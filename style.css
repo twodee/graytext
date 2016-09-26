@@ -322,3 +322,13 @@ code {
   top: 10px;
   right: 10px;
 }
+
+figure {
+  margin: 0px 0px;
+}
+
+figcaption {
+  display: block;
+  font-style: italic;
+  font-size: small;
+}

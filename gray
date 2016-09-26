@@ -336,7 +336,9 @@ class Lexer
 
     case c
       when "\n"
-        @states.push :linestart
+        if @states[-1] != :table
+          @states.push :linestart
+        end
         Token.new :EOL, @token_so_far
       when '*'
         get_token_after_asterisk
@@ -479,7 +481,6 @@ class Parser
       header = IO.read(File.dirname(__FILE__) + '/bubbles_header.html')
       header.gsub!(/(?<=<style>)(?=<\/style>)/, IO.read(File.dirname(__FILE__) + '/style.css'))
       utilities_source = IO.read(File.dirname(__FILE__) + '/utilities.js').gsub(/\\'/, "\\\\\\\\'")
-      STDERR.puts utilities_source
       header.gsub!(/(?<=<script>)(?=<\/script>)/, utilities_source)
       dst += header
     end
@@ -652,7 +653,10 @@ class Parser
   end
 
   def is_block
-    @tokens[@i].type == :LEFT_BRACKET && @tokens[@i + 1].type == :IDENTIFIER && @tokens[@i + 1].text == 'block'
+    @tokens[@i].type == :LEFT_BRACKET && @tokens[@i + 1].type == :IDENTIFIER &&
+    (@tokens[@i + 1].text == 'block' ||
+     @tokens[@i + 1].text == 'code' ||
+     @tokens[@i + 1].text == 'hide')
   end
 
   def is_code
@@ -664,7 +668,7 @@ class Parser
 
     # Need a paragraph?
     # puts "checking before #{@tokens[@i].inspect}"
-    needs_paragraph = (count_preceding_linebreaks >= 2 || @i == 0) && !is_comment && !is_block && !is_code && @tokens[@i].type != :EOL
+    needs_paragraph = (count_preceding_linebreaks >= 2 || @i == 0) && !is_comment && !is_block && @tokens[@i].type != :EOL
     dst += "<p>" if needs_paragraph
 
     while first_of_content? @tokens[@i].type
@@ -818,7 +822,7 @@ class Parser
               end
               dst += "[frame src=\"#{src}\"#{s}#{autosize_attribute}]"
             else
-              dst += "<iframe src=\"#{attributes['src']}\"#{s}#{autosize_attribute}></iframe>"
+              dst += "<iframe src=\"#{attributes['src']}\"#{s}#{autosize_attribute} frameborder=\"0\"></iframe>"
             end
 
           elsif command == "youtube"
@@ -835,16 +839,19 @@ class Parser
             else
               dst += "<script>generateTimedown(#{attributes['seconds']}, 'timedown1');</script>"
             end
+          elsif command == "span"
+
           elsif command == "image"
             s = attributes.map { |key, value| (key == 'src' || key == 'selflink' || (key == 'style' && attributes.has_key?('caption'))) ? '' : " #{key}=\"#{value}\"" }.join
             # TODO, if src is not relative, don't prefix it
 
-            if attributes.has_key?('caption')
+            # if attributes.has_key?('caption')
               # if !attributes.has_key?('width')
                 # raise 'caption, but no width!'
               # end
-              dst += "<div style=\"#{attributes['style']}\">"
-            end
+              # dst += "<div style=\"#{attributes['style']}\">"
+            # end
+            dst += "<figure style=\"width: #{attributes['width']}px;\" class=\"#{attributes['class']}\">"
 
             path = attributes['src']
             if path !~ /^https?:\/\//
@@ -861,9 +868,14 @@ class Parser
             end
 
             if attributes.has_key? 'caption'
-              dst += "<br><i><small>" + attributes['caption'] + "</small></i></span>"
-              dst += "</div>"
+              # dst += "<br><span"
+              # if attributes.has_key? 'width'
+                # dst += " style=\"width: #{attributes['width']}; margin-left: auto; margin-right: auto;\""
+              # end
+              # dst += "><i><small>" + attributes['caption'] + "</small></i></span>"
+              dst += "<figcaption>#{attributes['caption']}</figcaption>"
             end
+            dst += "</figure>"
           else
             pair_string = attributes.map { |key, value| " #{key}=\"#{value}\"" }.join
 
@@ -987,7 +999,7 @@ EOF
               dst += "<pre#{pair_string}>"
               li = 0
               while @i < @tokens.length && @tokens[@i].type == :CODE
-                dst += "<a href=\"#\" class=\"lineveil\">#{li}</a>: <span class=\"lineveil\">#{@tokens[@i].text}</span>"
+                dst += "#{'&nbsp;' * (2 - li.to_s.length)}<a href=\"#\" class=\"lineveil\">#{li}</a>: <span class=\"lineveil\">#{@tokens[@i].text}</span>"
                 if @i + 2 < @tokens.length && @tokens[@i + 2].type == :CODE
                   dst += "\n"
                 end
@@ -1052,6 +1064,18 @@ EOF
                 end
               end
               dst += '</blockquote>'
+            elsif command == 'hide'
+              dst += "<div class=\"indented\">"
+              dst += "<a href=\"#\" class=\"toggler\">#{attributes['title']}</a>"
+              dst += '<div class="togglee">'
+              dst += content
+              if @tokens[@i].type == :EOL
+                @i += 1
+              else
+                raise "expected EOL after quote content, found #{@tokens[@i].type}"
+              end
+              dst += '</div>'
+              dst += '</div>'
             elsif command == 'haiku'
               dst += "<blockquote#{pair_string}>"
               is_first = true
