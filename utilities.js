@@ -40,7 +40,7 @@ $(function() {
   });
 
   $('.scramble').click(function() {
-    scramble($(this).prev()[0]);
+    scramble($(this).parent().prev()[0]);
   });
 });
 

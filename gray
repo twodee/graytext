@@ -935,7 +935,7 @@ class Parser
                   end
                 end
                 dst += '</ol>'
-                dst += '<input type="button" class="scramble" value="Scramble">'
+                dst += '<p><input type="button" class="scramble" value="Scramble"></p>'
                 dst += '</div>'
               else
                 if attributes.has_key? 'lang'

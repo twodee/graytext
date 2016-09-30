@@ -206,6 +206,7 @@ pre {
 
 th, td, table {
 	border: 1px solid #dddddd;
+  padding: 5px;
 }
 
 th {
@@ -216,8 +217,7 @@ th {
 
 table {
 	border-collapse: collapse;
-	width: 100%;
-  margin: 1.6em 0;
+  margin: 1.6em auto;
 }
 
 th, td {
@@ -331,4 +331,8 @@ figcaption {
   display: block;
   font-style: italic;
   font-size: small;
+}
+
+figure br {
+  display: none;
 }
