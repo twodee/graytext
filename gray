@@ -240,6 +240,11 @@ class Lexer
       end
       @i += 1
       Token.new :EOL, "\n"
+    elsif @src[@i] == '|'
+      @i += 1
+      @states[-1] = :command
+      @states.push :eatspace
+      Token.new :SEPARATOR, '|'
     elsif @src[@i] == ']'
       @i += 1
       @states[-1] = :default
@@ -357,7 +362,7 @@ class Lexer
         get_token_after_backslash
       when '|'
         if @states[-1] == :table
-          Token.new :COLUMN_SEPARATOR, @token_so_far 
+          Token.new :SEPARATOR, @token_so_far 
         else
           get_token_content
         end
@@ -724,429 +729,10 @@ class Parser
       elsif @tokens[@i].type == :LEFT_BRACKET
         @i += 1
 
-        if @tokens[@i].type == :COMMENT
-          dst += "<!-- #{@tokens[@i].text} -->" if @target != 'wordpress'
-          @i += 1
-        elsif @tokens[@i].type == :STYLE
-          @i += 1
-          if @tokens[@i].type == :IDENTIFIER
-            key = @tokens[@i].text
-            @i += 1
-          else
-            raise "wanted ID"
-          end
-
-          lines = []
-          while @tokens[@i].type == :STYLE_LINE
-            lines << @tokens[@i].text
-            @i += 1
-          end 
-
-          @styles[key] = lines.map { |line| "#{line};" }.join(' ')
-        elsif @tokens[@i].type == :IDENTIFIER
-          command = @tokens[@i].text
-          @i += 1
-          attributes = parse_attributes
-
-          # Expand style key.
-          if attributes.has_key? 'style'
-            attributes['style'] = @styles[attributes['style']]
-          end
-
-          if command == "link"
-            blacklist = %w{to title}
-            attributes_string = attributes.reject { |key, _| blacklist.include? key }.map { |key, value| " #{key}=\"#{value}\"" }.join
-            dst += "<a href=\"#{attributes['to']}\"#{attributes_string}>#{attributes['title']}</a>"
-
-          elsif command == "table"
-            dst += "<table>\n"
-            if @tokens[@i].type == :EOL
-              @i += 1
-            else
-              raise 'expected EOL'
-            end
-
-            irow = 0
-
-            while @tokens[@i].type != :RIGHT_BRACKET
-              cell_letter = (irow == 0 && attributes.has_key?('headers') && attributes['headers'] == 'true') ? 'h' : 'd'
-              icolumn = 0
-
-              def get_cell_style attributes, col
-                if attributes.has_key?('align') && col < attributes['align'].length
-                  case attributes['align'][col]
-                    when 'r'
-                      "text-align: right"
-                    when 'c'
-                      "text-align: center"
-                    else
-                      "text-align: left"
-                  end
-                else
-                  "text-align: left"
-                end
-              end
-
-              dst += "  <tr>\n    <t#{cell_letter} style=\"#{get_cell_style attributes, icolumn}\">\n"
-              while @tokens[@i].type != :EOL
-                while @tokens[@i].type != :COLUMN_SEPARATOR && @tokens[@i].type != :EOL
-                  dst += content
-                end
-                if @tokens[@i].type == :COLUMN_SEPARATOR
-                  icolumn += 1
-                  dst += "\n    </t#{cell_letter}>\n    <t#{cell_letter} style=\"#{get_cell_style attributes, icolumn}\">\n"
-                  @i += 1
-                end
-              end
-              dst += "\n    </t#{cell_letter}>\n  </tr>\n"
-              @i += 1
-              irow += 1
-            end
-            dst += "</table>"
-            
-          elsif command == "frame"
-            s = attributes.map { |key, value| ['src', 'autosize'].member?(key) ? '' : " #{key}=\"#{value}\"" }.join
-            if attributes.has_key?('autosize') && attributes['autosize'] == 'true' && attributes.has_key?('id')
-              if @target == 'wordpress'
-                autosize_attribute = " autosize=\"true\""
-              else
-                autosize_attribute = " onload=\"autosize('#{attributes['id']}')\"";
-              end
-            else
-              autosize_attribute = ""
-            end
-            if @target == 'wordpress'
-              src = attributes['src']
-              if src !~ /https?:\/\// && @root
-                src = "#{@root}/#{src}"
-              end
-              dst += "[frame src=\"#{src}\"#{s}#{autosize_attribute}]"
-            else
-              dst += "<iframe src=\"#{attributes['src']}\"#{s}#{autosize_attribute} frameborder=\"0\"></iframe>"
-            end
-
-          elsif command == "youtube"
-            attributes['src'].gsub!(/youtu\.be/, 'www.youtube.com/embed')
-            s = attributes.map { |key, value| key == 'src' ? '' : " #{key}=\"#{value}\"" }.join
-            if @target == 'wordpress'
-              dst += "[frame src=\"#{attributes['src']}\"#{s} frameborder=\"0\" allowfullscreen]"
-            else
-              dst += "<iframe src=\"#{attributes['src']}\"#{s} frameborder=\"0\" allowfullscreen></iframe>"
-            end
-          elsif command == "timedown"
-            if @target == 'wordpress'
-              dst += "[timedown seconds=#{attributes['seconds']} id=timedown1]"
-            else
-              dst += "<script>generateTimedown(#{attributes['seconds']}, 'timedown1');</script>"
-            end
-          elsif command == "span"
-
-          elsif command == "image"
-            s = attributes.map { |key, value| (key == 'src' || key == 'selflink' || (key == 'style' && attributes.has_key?('caption'))) ? '' : " #{key}=\"#{value}\"" }.join
-            # TODO, if src is not relative, don't prefix it
-
-            # if attributes.has_key?('caption')
-              # if !attributes.has_key?('width')
-                # raise 'caption, but no width!'
-              # end
-              # dst += "<div style=\"#{attributes['style']}\">"
-            # end
-            dst += "<figure style=\"width: #{attributes['width']}px;\" class=\"#{attributes['class']}\">"
-
-            path = attributes['src']
-            if path !~ /^https?:\/\//
-              path = "#{@root}/#{path}"
-            end
-
-            is_selflink = attributes.has_key?('selflink') && attributes['selflink'] == 'true'
-            if is_selflink
-              dst += "<a href=\"#{path}\">"
-            end
-            dst += "<img src=\"#{path}\"#{s}>"
-            if is_selflink
-              dst += "</a>"
-            end
-
-            if attributes.has_key? 'caption'
-              # dst += "<br><span"
-              # if attributes.has_key? 'width'
-                # dst += " style=\"width: #{attributes['width']}; margin-left: auto; margin-right: auto;\""
-              # end
-              # dst += "><i><small>" + attributes['caption'] + "</small></i></span>"
-              dst += "<figcaption>#{attributes['caption']}</figcaption>"
-            end
-            dst += "</figure>"
-          else
-            pair_string = attributes.map { |key, value| " #{key}=\"#{value}\"" }.join
-
-            if command != 'code' || !attributes.has_key?('file')
-              if @tokens[@i].type == :EOL
-                @i += 1
-              else
-                raise "expected EOL, found #{@tokens[@i].type}"
-              end
-            end
-
-            if command == 'code'
-              if attributes.has_key?('hide')
-                dst += "<div class=\"indented\">"
-                dst += "<a href=\"#\" class=\"toggler\">#{attributes['hide']}</a>"
-                dst += '<div class="togglee">'
-              end
-
-              code = ''
-              if attributes.has_key? 'file'
-                code = IO.read(attributes['file'])
-              else
-                while @i < @tokens.length && (@tokens[@i].type == :CODE || @tokens[@i].type == :EOL)
-                  if @tokens[@i].type == :CODE
-                    if @i + 2 < @tokens.length && @tokens[@i + 2].type == :CODE
-                      code += "#{@tokens[@i].text}\n"
-                    else
-                      code += @tokens[@i].text
-                    end
-                    @i += 1
-                  else
-                    code += "\n\n"
-                  end
-                  if @tokens[@i].type == :EOL
-                    @i += 1
-                  else
-                    raise "expected EOL after code, found #{@tokens[@i].type}"
-                  end
-                end
-              end
-
-              if attributes.has_key?('scrambled')
-                dst += '<div class="scramblebox">'
-                dst += '<ol class="scrambled">'
-                code.lines.each do |line|
-                  if attributes.has_key? 'lang'
-                    dst += '<li>'
-                    IO.popen("coderay -#{attributes['lang']} -div", 'r+') do |pipe|
-                      pipe.puts line.chomp
-                      pipe.close_write
-                      code = pipe.read
-                      dst += code.chomp
-                    end
-                    dst += '</li>'
-                  else
-                    dst += "<li><pre>#{line.chomp}</pre></li>"
-                  end
-                end
-                dst += '</ol>'
-                dst += '<p><input type="button" class="scramble" value="Scramble"></p>'
-                dst += '</div>'
-              else
-                if attributes.has_key? 'lang'
-                  IO.popen("coderay -#{attributes['lang']} -div", 'r+') do |pipe|
-                    pipe.puts code
-                    pipe.close_write
-                    code = pipe.read
-                    dst += "<div#{pair_string}>#{code}</div>"
-                  end
-                else
-                  dst += "<pre#{pair_string}>"
-                  dst += entitize(code)
-                  dst += '</pre>'
-                end
-              end
-
-              if attributes.has_key?('hide')
-                dst += '</div>'
-                dst += '</div>'
-              end
-
-            elsif command == 'latex'
-              ['id'].each do |key|
-                if !attributes.has_key? key
-                  raise "latex snippet must have #{key} attribute!"
-                end
-              end
-
-              latex_source = <<'EOF'
-\documentclass[fleqn]{article}
-\usepackage{mathtools}
-\usepackage{amsmath}
-\usepackage[active,tightpage,textmath,displaymath,pdftex]{preview}
-\begin{document}
-\makeatletter\setlength\@mathmargin{0pt}\makeatother
-EOF
-              while @i < @tokens.length && @tokens[@i].type == :CODE
-                latex_source += @tokens[@i].text
-                @i += 1
-
-                if @tokens[@i].type == :EOL
-                  @i += 1
-                else
-                  raise "expected EOL after latex, found #{@tokens[@i].type}"
-                end
-              end
-              latex_source += "\n\\end{document}"
-
-              # IO.popen("pdflatex -jobname=#{attributes['id']} && gs -sDEVICE=png16m -dTextAlphaBits=4 -r144 -dGraphicsAlphaBits=4 -dSAFER -q -dNOPAUSE -dBATCH -sOutputFile=#{attributes['id']}.png #{attributes['id']}.pdf && mogrify -quality 100 -resize #{attributes['width']}x#{attributes['height']} #{attributes['id']}.png", 'w+') do |pipe|
-              IO.popen("pdflatex -jobname=#{attributes['id']} && (pdftoppm -rx 400 -ry 400 -png #{attributes['id']}.pdf > #{attributes['id']}.png)", 'w+') do |pipe|
-                pipe.write(latex_source)
-                pipe.close_write
-                pipe.read.split("\n").each do |line|
-                  STDERR.puts line
-                end
-              end
-
-              dst += "<img src=\"#{@root}/#{attributes['id']}.png\"#{s} style=\"#{@styles['latex_math']}\">"
-
-            elsif command == 'lineveil'
-              dst += "<pre#{pair_string}>"
-              li = 0
-              while @i < @tokens.length && @tokens[@i].type == :CODE
-                dst += "#{'&nbsp;' * (2 - li.to_s.length)}<a href=\"#\" class=\"lineveil\">#{li}</a>: <span class=\"lineveil\">#{@tokens[@i].text}</span>"
-                if @i + 2 < @tokens.length && @tokens[@i + 2].type == :CODE
-                  dst += "\n"
-                end
-                @i += 1
-                if @tokens[@i].type == :EOL
-                  @i += 1
-                else
-                  raise "expected EOL after code, found #{@tokens[@i].type}"
-                end
-                li += 1
-              end
-              dst += '</pre>'
-            elsif command == 'madeup'
-              ['id', 'width', 'height'].each do |key|
-                if !attributes.has_key? key
-                  raise "madeup snippet must have #{key} attribute!"
-                end
-              end
-
-              code = ''
-              while @i < @tokens.length && (@tokens[@i].type != :RIGHT_BRACKET) # || (@tokens[@i].type == :EOL && @i + 1 < @tokens.length && @tokens[@i + 1] !)
-                code += @tokens[@i].text
-                # if @i + 2 < @tokens.length && @tokens[@i + 2].type == :CODE
-                  # code += "\n"
-                # end
-                @i += 1
-                # if @tokens[@i].type == :EOL
-                  # @i += 1
-                # else
-                  # raise "expected EOL after code, found #{@tokens[@i].type}"
-                # end
-              end
-
-              if @target == 'wordpress'
-                dst += <<EOF
-<pre>[mup id=#{attributes['id']} width=#{attributes['width']} height=#{attributes['height']} frameborder="0"]#{code}[/mup]</pre>
-EOF
-              else
-                dst += <<EOF
-<div id="mup_#{attributes['id']}">
-  <form style="display: none" id="mup_form_#{attributes['id']}" target="mup_frame_#{attributes['id']}" action="http://embed.madeup.xyz" method="post">
-    <textarea name="src">#{code}</textarea>
-    <input type="submit"/>
-  </form>
-  <iframe name=\"mup_frame_#{attributes['id']}\" src=\"\" width=\"#{attributes['width']}\" height=\"#{attributes['height']}\" frameborder=\"0\"></iframe>
-  <script>                                                                                                                                                                        
-    document.getElementById('mup_form_#{attributes['id']}').submit();
-  </script>
-</div>
-EOF
-              end
-
-            elsif command == 'quote'
-              dst += "<blockquote#{pair_string}>"
-              while @i < @tokens.length && (first_of_content?(@tokens[@i].type) || @tokens[@i].type == :EOL)
-                dst += content
-                dst += "\n" if @i + 1 < @tokens.length && @tokens[@i + 1].type != :RIGHT_BRACKET
-                if @tokens[@i].type == :EOL
-                  @i += 1
-                else
-                  raise "expected EOL after quote content, found #{@tokens[@i].type}"
-                end
-              end
-              dst += '</blockquote>'
-            elsif command == 'hide'
-              dst += "<div class=\"indented\">"
-              dst += "<a href=\"#\" class=\"toggler\">#{attributes['title']}</a>"
-              dst += '<div class="togglee">'
-              dst += content
-              if @tokens[@i].type == :EOL
-                @i += 1
-              else
-                raise "expected EOL after quote content, found #{@tokens[@i].type}"
-              end
-              dst += '</div>'
-              dst += '</div>'
-            elsif command == 'haiku'
-              dst += "<blockquote#{pair_string}>"
-              is_first = true
-              while @i < @tokens.length && (first_of_content? @tokens[@i].type)
-                if !is_first
-                  dst += '<br>'
-                else
-                  is_first = false
-                end
-                dst += content
-                # dst += "\n" if @i + 1 < @tokens.length && @tokens[@i + 1].type != :RIGHT_BRACKET
-                if @tokens[@i].type == :EOL
-                  @i += 1
-                else
-                  raise "expected EOL after quote content, found #{@tokens[@i].type}"
-                end
-              end
-              dst += '</blockquote>'
-            elsif command == 'block'
-              if attributes.has_key?('hide')
-                dst += "<div class=\"indented\">"
-                dst += "<a href=\"#\" class=\"toggler\">#{attributes['hide']}</a>"
-                if attributes.has_key?('class')
-                  attributes['class'].gsub!(/"?$/, ' togglee')
-                else
-                  attributes['class'] = 'togglee'
-                end
-              end
-
-              pair_string = attributes.map { |key, value| " #{key}=\"#{value}\"" }.join
-
-              dst += "<div#{pair_string}>\n"
-              while @i < @tokens.length && (first_of_line? @tokens[@i].type)
-                dst += line
-              end
-              dst += '</div>'
-
-              if attributes.has_key?('hide')
-                dst += '</div>'
-              end
-            elsif command == 'strike'
-              dst += '<strike>'
-              while @i < @tokens.length && (first_of_line? @tokens[@i].type)
-                dst += line
-              end
-              dst += '</strike>'
-            elsif command == 'toggle'
-              dst += "<div class=\"toggle\"#{pair_string}>"
-              while @i < @tokens.length && (first_of_content? @tokens[@i].type)
-                dst += content
-                dst += "\n" if @i + 1 < @tokens.length && @tokens[@i + 1].type != :RIGHT_BRACKET
-                if @tokens[@i].type == :EOL
-                  @i += 1
-                else
-                  raise "expected EOL after toggle content, found #{@tokens[@i].type}"
-                end
-              end
-              dst += '</div>'
-            end
-          end
-        else
-          raise 'expected ID'
-        end
+        dst += handle_command
 
         if @tokens[@i].type == :RIGHT_BRACKET
           @i += 1
-
-          # TODO
-          # if @tokens[@i - 2].type == :COMMENT && @i < @tokens.length && @tokens[@i].type == :EOL
-            # @i += 1
-          # end
         else
           puts dst
           raise "expected ], found #{@tokens[@i].inspect}"
@@ -1158,129 +744,445 @@ EOF
 
     dst
   end
+
+  def handle_command
+    dst = ''
+
+    # Comments
+    if @tokens[@i].type == :COMMENT
+      dst += "<!-- #{@tokens[@i].text} -->" if @target != 'wordpress'
+      @i += 1
+
+    # Style definitions
+    elsif @tokens[@i].type == :STYLE
+      @i += 1
+      if @tokens[@i].type == :IDENTIFIER
+        key = @tokens[@i].text
+        @i += 1
+      else
+        raise "wanted ID"
+      end
+
+      lines = []
+      while @tokens[@i].type == :STYLE_LINE
+        lines << @tokens[@i].text
+        @i += 1
+      end 
+
+      @styles[key] = lines.map { |line| "#{line};" }.join(' ')
+
+    # Macro
+    elsif @tokens[@i].type == :IDENTIFIER
+      command = @tokens[@i].text
+      @i += 1
+      attributes = parse_attributes
+
+      # Expand style key.
+      if attributes.has_key? 'style'
+        attributes['style'] = @styles[attributes['style']]
+      end
+
+      if command == "link"
+        blacklist = %w{to title}
+        attributes_string = attributes.reject { |key, _| blacklist.include? key }.map { |key, value| " #{key}=\"#{value}\"" }.join
+        dst += "<a href=\"#{attributes['to']}\"#{attributes_string}>#{attributes['title']}</a>"
+
+      elsif command == "table"
+        dst += "<table>\n"
+        if @tokens[@i].type == :EOL
+          @i += 1
+        else
+          raise 'expected EOL'
+        end
+
+        irow = 0
+
+        while @tokens[@i].type != :RIGHT_BRACKET
+          cell_letter = (irow == 0 && attributes.has_key?('headers') && attributes['headers'] == 'true') ? 'h' : 'd'
+          icolumn = 0
+
+          def get_cell_style attributes, col
+            if attributes.has_key?('align') && col < attributes['align'].length
+              case attributes['align'][col]
+                when 'r'
+                  "text-align: right"
+                when 'c'
+                  "text-align: center"
+                else
+                  "text-align: left"
+              end
+            else
+              "text-align: left"
+            end
+          end
+
+          dst += "  <tr>\n    <t#{cell_letter} style=\"#{get_cell_style attributes, icolumn}\">\n"
+          while @tokens[@i].type != :EOL
+            while @tokens[@i].type != :SEPARATOR && @tokens[@i].type != :EOL
+              dst += content
+            end
+            if @tokens[@i].type == :SEPARATOR
+              icolumn += 1
+              dst += "\n    </t#{cell_letter}>\n    <t#{cell_letter} style=\"#{get_cell_style attributes, icolumn}\">\n"
+              @i += 1
+            end
+          end
+          dst += "\n    </t#{cell_letter}>\n  </tr>\n"
+          @i += 1
+          irow += 1
+        end
+        dst += "</table>"
+        
+      elsif command == "frame"
+        s = attributes.map { |key, value| ['src', 'autosize'].member?(key) ? '' : " #{key}=\"#{value}\"" }.join
+        if attributes.has_key?('autosize') && attributes['autosize'] == 'true' && attributes.has_key?('id')
+          if @target == 'wordpress'
+            autosize_attribute = " autosize=\"true\""
+          else
+            autosize_attribute = " onload=\"autosize('#{attributes['id']}')\"";
+          end
+        else
+          autosize_attribute = ""
+        end
+        if @target == 'wordpress'
+          src = attributes['src']
+          if src !~ /https?:\/\// && @root
+            src = "#{@root}/#{src}"
+          end
+          dst += "[frame src=\"#{src}\"#{s}#{autosize_attribute}]"
+        else
+          dst += "<iframe src=\"#{attributes['src']}\"#{s}#{autosize_attribute} frameborder=\"0\"></iframe>"
+        end
+
+      elsif command == "youtube"
+        attributes['src'].gsub!(/youtu\.be/, 'www.youtube.com/embed')
+        s = attributes.map { |key, value| key == 'src' ? '' : " #{key}=\"#{value}\"" }.join
+        if @target == 'wordpress'
+          dst += "[frame src=\"#{attributes['src']}\"#{s} frameborder=\"0\" allowfullscreen]"
+        else
+          dst += "<iframe src=\"#{attributes['src']}\"#{s} frameborder=\"0\" allowfullscreen></iframe>"
+        end
+      elsif command == "timedown"
+        if @target == 'wordpress'
+          dst += "[timedown seconds=#{attributes['seconds']} id=timedown1]"
+        else
+          dst += "<script>generateTimedown(#{attributes['seconds']}, 'timedown1');</script>"
+        end
+      elsif command == "span"
+
+      elsif command == "image"
+        s = attributes.map { |key, value| (key == 'src' || key == 'selflink' || (key == 'style' && attributes.has_key?('caption'))) ? '' : " #{key}=\"#{value}\"" }.join
+        # TODO, if src is not relative, don't prefix it
+
+        # if attributes.has_key?('caption')
+          # if !attributes.has_key?('width')
+            # raise 'caption, but no width!'
+          # end
+          # dst += "<div style=\"#{attributes['style']}\">"
+        # end
+        dst += "<figure style=\"width: #{attributes['width']}px;\" class=\"#{attributes['class']}\">"
+
+        path = attributes['src']
+        if path !~ /^https?:\/\//
+          path = "#{@root}/#{path}"
+        end
+
+        is_selflink = attributes.has_key?('selflink') && attributes['selflink'] == 'true'
+        if is_selflink
+          dst += "<a href=\"#{path}\">"
+        end
+        dst += "<img src=\"#{path}\"#{s}>"
+        if is_selflink
+          dst += "</a>"
+        end
+
+        if attributes.has_key? 'caption'
+          # dst += "<br><span"
+          # if attributes.has_key? 'width'
+            # dst += " style=\"width: #{attributes['width']}; margin-left: auto; margin-right: auto;\""
+          # end
+          # dst += "><i><small>" + attributes['caption'] + "</small></i></span>"
+          dst += "<figcaption>#{attributes['caption']}</figcaption>"
+        end
+        dst += "</figure>"
+      else
+        pair_string = attributes.map { |key, value| " #{key}=\"#{value}\"" }.join
+
+        if command != 'code' || !attributes.has_key?('file')
+          if @tokens[@i].type == :EOL
+            @i += 1
+          elsif @tokens[@i].type == :SEPARATOR
+          else
+            raise "expected EOL, found #{@tokens[@i].type}"
+          end
+        end
+
+        if command == 'code'
+          if attributes.has_key?('hide')
+            dst += "<div class=\"indented\">"
+            dst += "<a href=\"#\" class=\"toggler\">#{attributes['hide']}</a>"
+            dst += '<div class="togglee">'
+          end
+
+          code = ''
+          if attributes.has_key? 'file'
+            code = IO.read(attributes['file'])
+          else
+            while @i < @tokens.length && (@tokens[@i].type == :CODE || @tokens[@i].type == :EOL)
+              if @tokens[@i].type == :CODE
+                if @i + 2 < @tokens.length && @tokens[@i + 2].type == :CODE
+                  code += "#{@tokens[@i].text}\n"
+                else
+                  code += @tokens[@i].text
+                end
+                @i += 1
+              else
+                code += "\n\n"
+              end
+              if @tokens[@i].type == :EOL
+                @i += 1
+              else
+                raise "expected EOL after code, found #{@tokens[@i].type}"
+              end
+            end
+          end
+
+          if attributes.has_key?('scrambled')
+            dst += '<div class="scramblebox">'
+            dst += '<ol class="scrambled">'
+            code.lines.each do |line|
+              if attributes.has_key? 'lang'
+                dst += '<li>'
+                IO.popen("coderay -#{attributes['lang']} -div", 'r+') do |pipe|
+                  pipe.puts line.chomp
+                  pipe.close_write
+                  code = pipe.read
+                  dst += code.chomp
+                end
+                dst += '</li>'
+              else
+                dst += "<li><pre>#{line.chomp}</pre></li>"
+              end
+            end
+            dst += '</ol>'
+            dst += '<p><input type="button" class="scramble" value="Scramble"></p>'
+            dst += '</div>'
+          else
+            if attributes.has_key? 'lang'
+              IO.popen("coderay -#{attributes['lang']} -div", 'r+') do |pipe|
+                pipe.puts code
+                pipe.close_write
+                code = pipe.read
+                dst += "<div#{pair_string}>#{code}</div>"
+              end
+            else
+              dst += "<pre#{pair_string}>"
+              dst += entitize(code)
+              dst += '</pre>'
+            end
+          end
+
+          if attributes.has_key?('hide')
+            dst += '</div>'
+            dst += '</div>'
+          end
+
+        elsif command == 'latex'
+          ['id'].each do |key|
+            if !attributes.has_key? key
+              raise "latex snippet must have #{key} attribute!"
+            end
+          end
+
+          latex_source = <<'EOF'
+\documentclass[fleqn]{article}
+\usepackage{mathtools}
+\usepackage{amsmath}
+\usepackage[active,tightpage,textmath,displaymath,pdftex]{preview}
+\begin{document}
+\makeatletter\setlength\@mathmargin{0pt}\makeatother
+EOF
+          while @i < @tokens.length && @tokens[@i].type == :CODE
+            latex_source += @tokens[@i].text
+            @i += 1
+
+            if @tokens[@i].type == :EOL
+              @i += 1
+            else
+              raise "expected EOL after latex, found #{@tokens[@i].type}"
+            end
+          end
+          latex_source += "\n\\end{document}"
+
+          # IO.popen("pdflatex -jobname=#{attributes['id']} && gs -sDEVICE=png16m -dTextAlphaBits=4 -r144 -dGraphicsAlphaBits=4 -dSAFER -q -dNOPAUSE -dBATCH -sOutputFile=#{attributes['id']}.png #{attributes['id']}.pdf && mogrify -quality 100 -resize #{attributes['width']}x#{attributes['height']} #{attributes['id']}.png", 'w+') do |pipe|
+          IO.popen("pdflatex -jobname=#{attributes['id']} && (pdftoppm -rx 400 -ry 400 -png #{attributes['id']}.pdf > #{attributes['id']}.png)", 'w+') do |pipe|
+            pipe.write(latex_source)
+            pipe.close_write
+            pipe.read.split("\n").each do |line|
+              STDERR.puts line
+            end
+          end
+
+          dst += "<img src=\"#{@root}/#{attributes['id']}.png\"#{s} style=\"#{@styles['latex_math']}\">"
+
+        elsif command == 'lineveil'
+          dst += "<pre#{pair_string}>"
+          li = 0
+          while @i < @tokens.length && @tokens[@i].type == :CODE
+            dst += "#{'&nbsp;' * (2 - li.to_s.length)}<a href=\"#\" class=\"lineveil\">#{li}</a>: <span class=\"lineveil\">#{@tokens[@i].text}</span>"
+            if @i + 2 < @tokens.length && @tokens[@i + 2].type == :CODE
+              dst += "\n"
+            end
+            @i += 1
+            if @tokens[@i].type == :EOL
+              @i += 1
+            else
+              raise "expected EOL after code, found #{@tokens[@i].type}"
+            end
+            li += 1
+          end
+          dst += '</pre>'
+        elsif command == 'madeup'
+          ['id', 'width', 'height'].each do |key|
+            if !attributes.has_key? key
+              raise "madeup snippet must have #{key} attribute!"
+            end
+          end
+
+          code = ''
+          while @i < @tokens.length && (@tokens[@i].type != :RIGHT_BRACKET) # || (@tokens[@i].type == :EOL && @i + 1 < @tokens.length && @tokens[@i + 1] !)
+            code += @tokens[@i].text
+            # if @i + 2 < @tokens.length && @tokens[@i + 2].type == :CODE
+              # code += "\n"
+            # end
+            @i += 1
+            # if @tokens[@i].type == :EOL
+              # @i += 1
+            # else
+              # raise "expected EOL after code, found #{@tokens[@i].type}"
+            # end
+          end
+
+          if @target == 'wordpress'
+            dst += <<EOF
+<pre>[mup id=#{attributes['id']} width=#{attributes['width']} height=#{attributes['height']} frameborder="0"]#{code}[/mup]</pre>
+EOF
+          else
+            dst += <<EOF
+<div id="mup_#{attributes['id']}">
+<form style="display: none" id="mup_form_#{attributes['id']}" target="mup_frame_#{attributes['id']}" action="http://embed.madeup.xyz" method="post">
+<textarea name="src">#{code}</textarea>
+<input type="submit"/>
+</form>
+<iframe name=\"mup_frame_#{attributes['id']}\" src=\"\" width=\"#{attributes['width']}\" height=\"#{attributes['height']}\" frameborder=\"0\"></iframe>
+<script>                                                                                                                                                                        
+document.getElementById('mup_form_#{attributes['id']}').submit();
+</script>
+</div>
+EOF
+          end
+
+        elsif command == 'quote'
+          dst += "<blockquote#{pair_string}>"
+          while @i < @tokens.length && (first_of_content?(@tokens[@i].type) || @tokens[@i].type == :EOL)
+            dst += content
+            dst += "\n" if @i + 1 < @tokens.length && @tokens[@i + 1].type != :RIGHT_BRACKET
+            if @tokens[@i].type == :EOL
+              @i += 1
+            else
+              raise "expected EOL after quote content, found #{@tokens[@i].type}"
+            end
+          end
+          dst += '</blockquote>'
+        elsif command == 'hide'
+          dst += "<div class=\"indented\">"
+          dst += "<a href=\"#\" class=\"toggler\">#{attributes['title']}</a>"
+          dst += '<div class="togglee">'
+          if @tokens[@i].type == :SEPARATOR
+            @i += 1
+            dst += handle_command
+          else
+            dst += content
+            if @tokens[@i].type == :EOL
+              @i += 1
+            else
+              raise "expected EOL after hide content, found #{@tokens[@i].type}"
+            end
+          end
+          dst += '</div>'
+          dst += '</div>'
+        elsif command == 'haiku'
+          dst += "<blockquote#{pair_string}>"
+          is_first = true
+          while @i < @tokens.length && (first_of_content? @tokens[@i].type)
+            if !is_first
+              dst += '<br>'
+            else
+              is_first = false
+            end
+            dst += content
+            # dst += "\n" if @i + 1 < @tokens.length && @tokens[@i + 1].type != :RIGHT_BRACKET
+            if @tokens[@i].type == :EOL
+              @i += 1
+            else
+              raise "expected EOL after quote content, found #{@tokens[@i].type}"
+            end
+          end
+          dst += '</blockquote>'
+        elsif command == 'block'
+          if attributes.has_key?('hide')
+            dst += "<div class=\"indented\">"
+            dst += "<a href=\"#\" class=\"toggler\">#{attributes['hide']}</a>"
+            if attributes.has_key?('class')
+              attributes['class'].gsub!(/"?$/, ' togglee')
+            else
+              attributes['class'] = 'togglee'
+            end
+          end
+
+          pair_string = attributes.map { |key, value| " #{key}=\"#{value}\"" }.join
+
+          dst += "<div#{pair_string}>\n"
+          while @i < @tokens.length && (first_of_line? @tokens[@i].type)
+            dst += line
+          end
+          dst += '</div>'
+
+          if attributes.has_key?('hide')
+            dst += '</div>'
+          end
+        elsif command == 'strike'
+          dst += '<strike>'
+          if @tokens[@i].type == :SEPARATOR
+            @i += 1
+            dst += handle_command
+          else
+            while @i < @tokens.length && (first_of_line? @tokens[@i].type)
+              dst += line
+            end
+          end
+          dst += '</strike>'
+        elsif command == 'toggle'
+          dst += "<div class=\"toggle\"#{pair_string}>"
+          while @i < @tokens.length && (first_of_content? @tokens[@i].type)
+            dst += content
+            dst += "\n" if @i + 1 < @tokens.length && @tokens[@i + 1].type != :RIGHT_BRACKET
+            if @tokens[@i].type == :EOL
+              @i += 1
+            else
+              raise "expected EOL after toggle content, found #{@tokens[@i].type}"
+            end
+          end
+          dst += '</div>'
+        end
+      end
+    else
+      raise 'expected ID'
+    end
+
+    dst
+  end
 end
-
-# TODO
-# comments - check
-# linebreaks - check
-# nesting - check
-# attributes - check
-# unordered lists - check
-# ordered lists - check
-# bold text - check
-# nested lists - check
-# links - check
-# images - check
-# coderay - check
-# toggle - check
-# lineveil - check
-# madeup iframe - check
-# general iframe - check
-
-# src = <<EOF
-# [lineveil
-# a
-# b
-# c
-# d
-# ]
-
-# [frame src=http://www.twodee.org width=600 height=200]
-
-# [madeup width=600 height=400 id=square
-# moveto 0, 0, 0
-# repeat 4
-  # move 10
-  # yaw 90
-# end
-# dowel
-# ]
-# EOF
-
-# src = <<EOF
-# - [toggle
-# [code
-# this quick brown fox
-# ]
-# ]
-# - [toggle
-# that quick brown fox
-# ]
-# - [toggle
-# there quick brown fox
-# ]
-# EOF
-
-# src = <<'EOF'
-# - [code
-# line 1
-# ]
-# - [code 
-# line 2
-# ]
-
-# [code lang=madeup
-# moveto 0, 0, 0
-# repeat 4
-  # move 10
-  # yaw 90
-# end
-# ]
-
-# [code lang=c
-# int main(int argc, char **argv) {
-  # printf("%d\n", argc);
-# }
-# ]
-# EOF
-
-# src = <<EOF
-# - a
-# - b
-  # 1. **zoo**
-    # - the
-    # - inner
-    # - inner
-    # - list
-  # 2. *2*
-  # 3. `some program code`
-# - c
-
-# asdfasd [link to="http://www.madeup.xyz" title="Zig Zog"]
-# [image src=foo.png width=20 height=40]
-# EOF
-
-# src = <<EOF
-# 1. foo0
-# 2. foo1
-# 3. foo2
-# 4. foo3
-
-# Hi
-## There
-### Agenda
-#### Four
-##### Five
-###### Six
-
-# - dog
-# - cat
-# - whistle
-
-# foo `*code*` is a winner
-# [" this is a comment]
-
-# [code lang=ruby
-# puts 10
-# ]
-
-# [block id=foo7 width=20
-# 123
-# [block
-# inside block
-# ]
-# ]
-# EOF
 
 src = File.read(path)
 lexer = Lexer.new src
