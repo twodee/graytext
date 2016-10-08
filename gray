@@ -231,7 +231,7 @@ class Lexer
     if @src[@i] == "\n"
       if @id == 'code' || @id == 'lineveil' || @id == 'madeup' || @id == 'latex' # Any code blocks
         @states[-1] = :blockcode
-      elsif @id == 'block'
+      elsif @id == 'block' || @id == 'listveil'
         @states[-1] = :linestart
       elsif @id == 'table'
         @states[-1] = :table
@@ -661,7 +661,8 @@ class Parser
     @tokens[@i].type == :LEFT_BRACKET && @tokens[@i + 1].type == :IDENTIFIER &&
     (@tokens[@i + 1].text == 'block' ||
      @tokens[@i + 1].text == 'code' ||
-     @tokens[@i + 1].text == 'hide')
+     @tokens[@i + 1].text == 'hide' ||
+     @tokens[@i + 1].text == 'listveil')
   end
 
   def is_code
@@ -1024,6 +1025,21 @@ EOF
           end
 
           dst += "<img src=\"#{@root}/#{attributes['id']}.png\"#{s} style=\"#{@styles['latex_math']}\">"
+
+        elsif command == 'listveil'
+          if attributes.has_key?('class') 
+            attributes['class'] += ' listveil'
+          else
+            attributes['class'] = 'listveil'
+          end
+
+          pair_string = attributes.map { |key, value| " #{key}=\"#{value}\"" }.join
+
+          dst += "<div#{pair_string}>\n"
+          while @i < @tokens.length && (first_of_line? @tokens[@i].type)
+            dst += line
+          end
+          dst += '</div>'
 
         elsif command == 'lineveil'
           dst += "<pre#{pair_string}>"

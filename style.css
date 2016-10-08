@@ -336,3 +336,7 @@ figcaption {
 figure br {
   display: none;
 }
+
+.lineveil {
+  white-space: pre-wrap;
+}

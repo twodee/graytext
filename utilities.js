@@ -20,10 +20,17 @@ function lineveil() {
   return false;
 }
 
+function listveilShow(hider) {
+  $(hider).parent().hide();
+  $(hider).parent().next().show();
+}
+
 $(document).ready(function() {
   $('span.lineveil').css('display', 'none');
   $('span.lineveil').after('<span>...</span>');
   $('a.lineveil').click(lineveil);
+
+  $('.listveil ul li').hide().before('<li><a href="#" onclick="listveilShow(this)">...</a></li>');
 });
 
 function scramble(list) {
