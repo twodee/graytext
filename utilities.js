@@ -21,16 +21,18 @@ function lineveil() {
 }
 
 function listveilShow(hider) {
-  $(hider).parent().hide();
-  $(hider).parent().next().show();
+  $(hider).fadeOut(400, function() {
+    $(hider).next().fadeIn();
+  });
+  return false;
 }
 
 $(document).ready(function() {
   $('span.lineveil').css('display', 'none');
   $('span.lineveil').after('<span>...</span>');
   $('a.lineveil').click(lineveil);
-
-  $('.listveil ul li').hide().before('<li><a href="#" onclick="listveilShow(this)">...</a></li>');
+  $('.listveil * li').wrapInner('<span class="listveil"></span>');
+  $('span.listveil').hide().before('<a href="#" onclick="listveilShow(this); return false;">...</a>');
 });
 
 function scramble(list) {
