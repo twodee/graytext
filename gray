@@ -558,7 +558,7 @@ class Parser
     if @tokens[@i].type == :HASHES || @tokens[@i].type == :COUNTED_HASHES
       rank = @tokens[@i].text.length
       real_rank = rank
-      rank += 2 if @target == 'wordpress'
+      rank += 2 # if @target == 'wordpress' # HEADER TAGS
       dst += "<h#{rank}>"
       if @tokens[@i].type == :COUNTED_HASHES
         # lesser ranks go back to 0
