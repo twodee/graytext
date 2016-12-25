@@ -475,7 +475,7 @@ class Parser
       @root = $config['root'] + '/' + $offset
     end
     
-    # puts @root
+    # STDERR.puts @root
   end
 
   def entitize code
@@ -872,6 +872,9 @@ class Parser
           dst += "<script>generateTimedown(#{attributes['seconds']}, 'timedown1');</script>"
         end
       elsif command == "span"
+
+      elsif command == "redacted"
+        dst += '&#9608;&#9608;&#9608;&#9608;&#9608;&#9608;'
 
       elsif command == "image"
         s = attributes.map { |key, value| (key == 'src' || key == 'selflink' || (key == 'style' && attributes.has_key?('caption'))) ? '' : " #{key}=\"#{value}\"" }.join
