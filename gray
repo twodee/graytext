@@ -486,7 +486,9 @@ class Parser
     dst = ''
     if @target == 'html'
       header = IO.read(File.dirname(__FILE__) + '/bubbles_header.html')
-      header.gsub!(/(?<=<style>)(?=<\/style>)/, IO.read(File.dirname(__FILE__) + '/style.css'))
+      # Header has \0 in it, which is special to gsub.
+      header.gsub!(/(?<=<style>)(?=<\/style>)/, IO.read(File.dirname(__FILE__) + '/style.css').gsub(/(\\\d)/, '\\\\\1'))
+      # STDERR.puts header
       utilities_source = IO.read(File.dirname(__FILE__) + '/utilities.js').gsub(/\\'/, "\\\\\\\\'")
       header.gsub!(/(?<=<script>)(?=<\/script>)/, utilities_source)
       dst += header
@@ -835,6 +837,17 @@ class Parser
           irow += 1
         end
         dst += "</table>"
+
+      elsif command == "javascript"
+        src = attributes['src']
+        if @target == 'wordpress'
+          if src !~ /https?:\/\// && @root
+            src = "#{@root}/#{src}"
+          end
+          dst += "[emjs src=\"#{src}\"]"
+        else
+          dst += "<script src=\"#{src}\"></script>"
+        end
         
       elsif command == "frame"
         s = attributes.map { |key, value| ['src', 'autosize'].member?(key) ? '' : " #{key}=\"#{value}\"" }.join

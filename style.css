@@ -21,7 +21,10 @@ html {
 
 body {
   background: rgb(85%, 85%, 85%);
-  font-family: 'EB Garamond';
+  /* font-family: 'EB Garamond'; */
+  /* font-family: 'News Cycle'; */
+  font-family: 'Palanquin';
+  color: #555555;
   margin: 0;
   margin-right: 20px;
 
@@ -29,12 +32,18 @@ body {
   /* width: 960px; */
 }
 
+p, ol, ul, blockquote {
+  line-height: 125%;
+  margin-top: 3px;
+}
+
 h1 {
   color: rgb(50%, 60%, 70%);
-  font-family: 'Suez One', sans;
+  font-family: 'Contrail One', sans;
   font-size: 40pt;
   margin-top: 0;
   margin-bottom: 0;
+  font-weight: bold;
 }
 
 .titlelink {
@@ -45,8 +54,8 @@ h1 {
 h2 {
   margin-top: 5px;
   margin-bottom: 0px;
-  color: rgb(55%, 65%, 75%);
-  font-family: 'Merriweather Sans', sans;
+  color: rgb(65%, 75%, 85%);
+  font-family: 'Oswald', sans;
   font-size: 20pt;
 }
 
@@ -150,6 +159,29 @@ h6 {
   /* background-color: #CCCCCC; */
 }
 
+a {
+  text-decoration: none;
+  font-weight: bold;
+  color: #483d8b;
+}
+
+ul { 
+  list-style-type: none;
+}
+
+li {
+  position: relative;
+}
+
+ul li:before {
+  content: '\002022';
+  padding: 0 10px 0 0;
+  position: absolute;
+  top: 0;
+  left: -10px;
+}
+
+
 .navlist li {
   float: left;
 }
@@ -164,6 +196,10 @@ h6 {
 
 .navlist li form {
   padding-left: 10px;
+}
+
+.navlist li:before {
+  content: ''
 }
 
 .navlist li:after {
