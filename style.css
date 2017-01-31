@@ -23,18 +23,13 @@ body {
   background: rgb(85%, 85%, 85%);
   /* font-family: 'EB Garamond'; */
   /* font-family: 'News Cycle'; */
-  font-family: 'Palanquin';
+  font-family: 'Source Sans Pro';
   color: #555555;
   margin: 0;
   margin-right: 20px;
 
   /* I can't have this here if I want floats to wrap? */
   /* width: 960px; */
-}
-
-p, ol, ul, blockquote {
-  line-height: 125%;
-  margin-top: 3px;
 }
 
 h1 {
@@ -77,12 +72,14 @@ h4 {
   font-size: 16pt;
   color: rgb(75%, 55%, 55%);
   margin-bottom: 2px;
+  margin-top: 10px;
 }
 
 h5 {
-  font-weight: bold;
+  font-style: italic;
   font-size: 14pt;
-  color: rgb(75%, 55%, 55%);
+  margin-bottom: 0px;
+  color: rgb(55%, 55%, 55%);
 }
 
 h6 {
@@ -149,6 +146,7 @@ h6 {
 .byline {
   margin-top: 0;
   color: rgb(60%, 60%, 60%);
+  font-size: small;
 }
 
 .navlist {
@@ -165,6 +163,7 @@ a {
   color: #483d8b;
 }
 
+/*
 ul { 
   list-style-type: none;
 }
@@ -180,7 +179,7 @@ ul li:before {
   top: 0;
   left: -10px;
 }
-
+*/
 
 .navlist li {
   float: left;
@@ -196,10 +195,6 @@ ul li:before {
 
 .navlist li form {
   padding-left: 10px;
-}
-
-.navlist li:before {
-  content: ''
 }
 
 .navlist li:after {
@@ -294,6 +289,7 @@ img.size-full {
   display: block;
   margin-left: auto;
   margin-right: auto;
+  text-align: center;
 }
 
 .graysignature {
@@ -380,4 +376,20 @@ figure br {
 
 .lineveil {
   white-space: pre-wrap;
+}
+
+.grayblock {
+  margin-top: 3px;
+  margin-bottom: 10px;
+}
+
+/* Superseded by .grayblock. */
+p {
+  margin-top: 3px;
+  margin-bottom: 10px;
+}
+
+/* jQuery's slideDown/slideUp were jumping around without this. */
+.togglee {
+  overflow: auto;
 }

@@ -35,6 +35,15 @@ $(document).ready(function() {
   $('span.listveil').hide().before('<a href="#" onclick="listveilShow(this); return false;">...</a>');
 });
 
+function shuffle(list) {
+  for (var i = list.length - 1; i > 0; i -= 1) {
+    var j = Math.floor(Math.random() * (i + 1));
+    var tmp = list[i];
+    list[i] = list[j];
+    list[j] = tmp;
+  }
+}
+
 function scramble(list) {
   for (var i = list.children.length; i >= 0; --i) {
     list.appendChild(list.children[Math.random() * i | 0]);
@@ -110,3 +119,12 @@ function generateTimedown(nseconds, id) {
 }
 
 var timers = {};
+
+function raffle(element, list) {
+  if (list.length == 0) {
+    element.innerHTML = '&iexcl;no mas!';
+  } else {
+    element.innerHTML = list[list.length - 1];
+    list.splice(list.length - 1);
+  }
+}

@@ -679,7 +679,7 @@ class Parser
     # Need a paragraph?
     # puts "checking before #{@tokens[@i].inspect}"
     needs_paragraph = (count_preceding_linebreaks >= 2 || @i == 0) && !is_comment && !is_block && @tokens[@i].type != :EOL
-    dst += "<p>" if needs_paragraph
+    dst += "<p class=\"grayblock\">" if needs_paragraph
 
     while first_of_content? @tokens[@i].type
       if @tokens[@i].type == :CONTENT
@@ -938,7 +938,7 @@ class Parser
 
         if command == 'code'
           if attributes.has_key?('hide')
-            dst += "<div class=\"indented\">"
+            dst += "<div class=\"indented grayblock\">"
             dst += "<a href=\"#\" class=\"toggler\">#{attributes['hide']}</a>"
             dst += '<div class="togglee">'
           end
@@ -984,7 +984,7 @@ class Parser
               end
             end
             dst += '</ol>'
-            dst += '<p><input type="button" class="scramble" value="Scramble"></p>'
+            dst += '<p class="grayblock"><input type="button" class="scramble" value="Scramble"></p>'
             dst += '</div>'
           else
             if attributes.has_key? 'lang'
@@ -1004,6 +1004,26 @@ class Parser
           if attributes.has_key?('hide')
             dst += '</div>'
             dst += '</div>'
+          end
+
+        elsif command == 'raffle'
+          choices = []
+          while @i < @tokens.length && (@tokens[@i].type != :RIGHT_BRACKET)
+            choices << line.chomp
+          end
+
+          if @target == 'wordpress'
+            dst += "[raffle id=#{attributes['id']}]#{choices.join("\n")}[/raffle]"
+          else
+            dst += <<EOF
+<script>
+var raffle_choices_#{attributes['id']} = [#{choices.map { |choice| "'#{choice}'" }.join(', ')}];
+shuffle(raffle_choices_#{attributes['id']});
+</script>
+<div id="#{attributes['id']}" style="user-select: none; text-align: center; font-size: 24pt;" onclick="raffle(this, raffle_choices_#{attributes['id']});">
+click for a random term...
+</div>
+EOF
           end
 
         elsif command == 'latex'
@@ -1084,18 +1104,11 @@ EOF
           end
 
           code = ''
-          while @i < @tokens.length && (@tokens[@i].type != :RIGHT_BRACKET) # || (@tokens[@i].type == :EOL && @i + 1 < @tokens.length && @tokens[@i + 1] !)
+          while @i < @tokens.length && (@tokens[@i].type != :RIGHT_BRACKET)
             code += @tokens[@i].text
-            # if @i + 2 < @tokens.length && @tokens[@i + 2].type == :CODE
-              # code += "\n"
-            # end
             @i += 1
-            # if @tokens[@i].type == :EOL
-              # @i += 1
-            # else
-              # raise "expected EOL after code, found #{@tokens[@i].type}"
-            # end
           end
+          code.gsub!(/'/, '\\\\\'')
 
           if @target == 'wordpress'
             dst += <<EOF
@@ -1109,7 +1122,7 @@ EOF
 <input type="submit"/>
 </form>
 <iframe name=\"mup_frame_#{attributes['id']}\" src=\"\" width=\"#{attributes['width']}\" height=\"#{attributes['height']}\" frameborder=\"0\"></iframe>
-<script>                                                                                                                                                                        
+<script>
 document.getElementById('mup_form_#{attributes['id']}').submit();
 </script>
 </div>
@@ -1129,9 +1142,11 @@ EOF
           end
           dst += '</blockquote>'
         elsif command == 'hide'
-          dst += "<div class=\"indented\">"
+          is_indented = attributes.has_key?('indent') && attributes['indent'] == 'true'
+          dst += "<div class=\"indented grayblock\">" if is_indented
           dst += "<a href=\"#\" class=\"toggler\">#{attributes['title']}</a>"
-          dst += '<div class="togglee">'
+          classes = attributes.has_key?('class') ? ' ' + attributes['class'] : ''
+          dst += "<div class=\"togglee#{classes}\">"
           if @tokens[@i].type == :SEPARATOR
             @i += 1
             dst += handle_command
@@ -1144,7 +1159,7 @@ EOF
             end
           end
           dst += '</div>'
-          dst += '</div>'
+          dst += '</div>' if is_indented
         elsif command == 'haiku'
           dst += "<blockquote#{pair_string}>"
           is_first = true
@@ -1165,7 +1180,7 @@ EOF
           dst += '</blockquote>'
         elsif command == 'block'
           if attributes.has_key?('hide')
-            dst += "<div class=\"indented\">"
+            dst += "<div class=\"grayblock indented\">"
             dst += "<a href=\"#\" class=\"toggler\">#{attributes['hide']}</a>"
             if attributes.has_key?('class')
               attributes['class'].gsub!(/"?$/, ' togglee')
