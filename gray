@@ -1017,7 +1017,7 @@ class Parser
           else
             dst += <<EOF
 <script>
-var raffle_choices_#{attributes['id']} = [#{choices.map { |choice| "'#{choice}'" }.join(', ')}];
+var raffle_choices_#{attributes['id']} = [#{choices.map { |choice| "'#{choice.gsub(/\\/, '\\\\\\\\')}'" }.join(', ')}];
 shuffle(raffle_choices_#{attributes['id']});
 </script>
 <div id="#{attributes['id']}" style="user-select: none; text-align: center; font-size: 24pt;" onclick="raffle(this, raffle_choices_#{attributes['id']});">
