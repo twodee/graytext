@@ -1,0 +1,398 @@
+/*
+Theme Name: Midlife
+Theme URI: http://www.twodee.org
+Author: Chris Johnson
+Description: A theme for me in my 30s.
+Version: 0.1
+*/
+
+html {
+  box-sizing: border-box;
+  margin: 0;
+}
+
+*, *:before, *:after {
+  box-sizing: inherit;
+}
+
+.indented {
+  margin-left: 20px;
+}
+
+body {
+  background: rgb(85%, 85%, 85%);
+  /* font-family: 'EB Garamond'; */
+  /* font-family: 'News Cycle'; */
+  font-family: 'Source Sans Pro';
+  color: #555555;
+  margin: 0;
+  margin-right: 20px;
+
+  /* I can't have this here if I want floats to wrap? */
+  /* width: 960px; */
+}
+
+h1 {
+  color: rgb(50%, 60%, 70%);
+  font-family: 'Contrail One', sans;
+  font-size: 40pt;
+  margin-top: 0;
+  margin-bottom: 0;
+  font-weight: bold;
+}
+
+.titlelink {
+  text-decoration: none;
+  color: rgb(50%, 60%, 70%);
+}
+
+h2 {
+  margin-top: 5px;
+  margin-bottom: 0px;
+  color: rgb(65%, 75%, 85%);
+  font-family: 'Oswald', sans;
+  font-size: 20pt;
+}
+
+.h2link {
+  text-decoration: none;
+  color: rgb(55%, 65%, 75%);
+}
+
+h3 {
+  font-family: 'Merriweather Sans', sans;
+  font-weight: bold;
+  font-size: 18pt;
+  color: rgb(70%, 50%, 50%);
+  margin-bottom: 0px;
+}
+
+h4 {
+  font-weight: bold;
+  font-size: 16pt;
+  color: rgb(75%, 55%, 55%);
+  margin-bottom: 2px;
+  margin-top: 10px;
+}
+
+h5 {
+  font-style: italic;
+  font-size: 14pt;
+  margin-bottom: 0px;
+  color: rgb(55%, 55%, 55%);
+}
+
+h6 {
+  font-weight: bold;
+  font-size: 12pt;
+  color: rgb(75%, 55%, 55%);
+}
+
+.bubble {
+  width: 100%;
+  display: block;
+  background: #ffffff;
+  box-shadow: rgba(0,0,0,0.2) 0px 2px 3px, inset rgba(0,0,0,0.2) 0px -1px 2px;
+  border-radius: 20px;
+  padding: 20px;
+  margin: 0px 0px;
+  margin-bottom: 20px;
+}
+
+.hcenter {
+  width: 100%;
+  margin-left: auto;
+  margin-right: auto;
+  text-align: center;
+}
+
+.column {
+  float: left;
+  padding: 0px;
+  margin-left: 20px;
+  margin-right: 0px;
+}
+
+.left2 {
+  width: 450px;
+}
+
+.right2 {
+  width: 450px;
+}
+
+.left3 {
+  width: 685px;
+}
+
+.right1 {
+  width: 215px;
+}
+
+.all4 {
+  width: 920px;
+  clear: both;
+  margin-left: 20px;
+  margin-right: 0px;
+  margin-top: 20px;
+  margin-bottom: 20px;
+}
+
+.postTitle {
+  margin-bottom: 0;
+  display: inline-block;
+}
+
+.byline {
+  margin-top: 0;
+  color: rgb(60%, 60%, 60%);
+  font-size: small;
+}
+
+.navlist {
+  list-style-type: none;
+  overflow: hidden;
+  margin: 0;
+  padding: 0;
+  /* background-color: #CCCCCC; */
+}
+
+a {
+  text-decoration: none;
+  font-weight: bold;
+  color: #483d8b;
+}
+
+/*
+ul { 
+  list-style-type: none;
+}
+
+li {
+  position: relative;
+}
+
+ul li:before {
+  content: '\002022';
+  padding: 0 10px 0 0;
+  position: absolute;
+  top: 0;
+  left: -10px;
+}
+*/
+
+.navlist li {
+  float: left;
+}
+
+.navlist li a {
+  display: inline-block;
+  text-decoration: none;
+  color: rgb(70%, 50%, 50%);
+  padding-left: 10px;
+  padding-right: 10px;
+}
+
+.navlist li form {
+  padding-left: 10px;
+}
+
+.navlist li:after {
+  content: '|'
+}
+
+.navlist li:last-child:after {
+  content: ''
+}
+
+/* Remove smiley face. */
+img#wpstats {
+  display:none;
+}
+
+/* .navlist li:first-child { */
+  /* margin-left: 0; */
+  /* padding-left: 0; */
+/* } */
+
+pre {
+  box-shadow: 0 1px 0 #ffffff, inset 0 1px 1px rgba(0, 0, 0, 0.2);
+  box-sizing: border-box;
+  background: #f4f4f4;
+  border: 1px solid #aaaaaa;
+  border-bottom-color: #cccccc;
+  border-radius: 2px;
+  height: auto;
+  margin: 10px 0px;
+  outline: none;
+  padding: 6px 10px;
+  vertical-align: middle;
+  width: 100%;
+  overflow: auto;
+}
+
+.afterheading {
+  margin-top: 10px;
+}
+
+th, td, table {
+	border: 1px solid #dddddd;
+  padding: 5px;
+}
+
+th {
+	border: 1px solid #dddddd;
+	border-bottom: 3px solid #dddddd;
+	/* border-top: 1px solid #333333; */
+}
+
+table {
+	border-collapse: collapse;
+  margin: 1.6em auto;
+}
+
+th, td {
+	/* padding: .3em; */
+}
+
+.flashback_right {
+  display: inline-block;
+  vertical-align: middle;
+  text-align: center;
+  /* background: #CCCCCC; */
+  /* width: 200px; */
+}
+
+.flashback_image {
+  display: inline-block;
+  vertical-align: middle;
+  margin-right: 10px;
+}
+
+.flashback_link {
+}
+
+img.size-full {
+  max-width: 640px;
+  height: auto;
+  display: block;
+}
+
+.wp-caption-text {
+  margin-top: 0;
+  font-family: 'Open Sans', sans-serif;
+  font-style: italic;
+  font-size: 10pt;
+}
+
+.graycentered {
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.graysignature {
+  display: block;
+  margin-left: 400px;
+}
+
+.graysignature > * {
+  display: block;
+  margin-top: 5px;
+  margin-bottom: 5px;
+}
+
+code {
+  white-space: pre;
+  background-color: #f7f7f9;
+  padding: 2px 4px;
+  border: 1px solid #e1e1e8;
+  border-radius: 3px;
+  color: #d14;
+}
+
+.scrambled {
+  clear: both;
+  list-style-type: none;
+  margin-left: 0;
+  padding-left: 0;
+  box-shadow: 0 1px 0 #ffffff, inset 0 1px 1px rgba(0, 0, 0, 0.2);
+  box-sizing: border-box;
+  background: #f4f4f4;
+  border: 1px solid #aaaaaa;
+  border-bottom-color: #cccccc;
+  border-radius: 2px;
+  height: auto;
+  margin: 0;
+  outline: none;
+  padding: 6px 10px;
+  vertical-align: middle;
+  width: 100%;
+  overflow: auto;
+}
+
+.scrambled li {
+  margin-left: 0;
+  margin: 0;
+  padding: 0;
+}
+
+.scrambled li pre {
+  box-shadow: 0 0px 0 #ffffff, inset 0 0px 0px rgba(0, 0, 0, 0.2);
+  background-color: transparent;
+  border: 0px;
+  height: auto;
+  margin: 0;
+  padding: 0;
+  outline: none;
+  vertical-align: middle;
+  width: 100%;
+}
+
+.scramblebox {
+  position: relative;
+}
+
+.scramble {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+}
+
+figure {
+  margin: 0px 0px;
+}
+
+figcaption {
+  display: block;
+  font-style: italic;
+  font-size: small;
+}
+
+figure br {
+  display: none;
+}
+
+.lineveil {
+  white-space: pre-wrap;
+}
+
+.grayblock {
+  margin-top: 3px;
+  margin-bottom: 10px;
+}
+
+/* Superseded by .grayblock. */
+p {
+  margin-top: 3px;
+  margin-bottom: 10px;
+}
+
+/* jQuery's slideDown/slideUp were jumping around without this. */
+.togglee {
+  overflow: auto;
+}
+
+.madeupframe {
+  border: solid 1px #CCCCCC;
+}

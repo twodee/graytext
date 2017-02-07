@@ -9,6 +9,7 @@ Version: 0.1
 html {
   box-sizing: border-box;
   margin: 0;
+  height: 100%;
 }
 
 *, *:before, *:after {
@@ -20,13 +21,14 @@ html {
 }
 
 body {
-  background: rgb(85%, 85%, 85%);
+  background: #FFFFFF;
   /* font-family: 'EB Garamond'; */
   /* font-family: 'News Cycle'; */
   font-family: 'Source Sans Pro';
-  color: #555555;
-  margin: 0;
-  margin-right: 20px;
+  color: #000000;
+  margin: 10px;
+  height: 100%;
+  overflow: hidden;
 
   /* I can't have this here if I want floats to wrap? */
   /* width: 960px; */
@@ -391,4 +393,42 @@ p {
 /* jQuery's slideDown/slideUp were jumping around without this. */
 .togglee {
   overflow: auto;
+}
+
+.madeupframe {
+  border: none;
+}
+
+.grayslide {
+  position: absolute;
+  top: 10px;
+  bottom: 10px;
+  left: 10px;
+  right: 10px;
+  font-size: 36pt;
+}
+
+.grayslide.fullscreen {
+  top: 0px;
+  bottom: 0px;
+  left: 0px;
+  right: 0px;
+}
+
+.vcenterparent {
+  display: table;
+  position: absolute;
+  width: 100%;
+  height: 100%;
+}
+
+.vcenterwrapper {
+  display: table-cell;
+  vertical-align: middle;
+}
+
+.vcentercontent {
+  margin-left: auto;
+  margin-right: auto;
+  width: 50%;
 }
