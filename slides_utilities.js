@@ -145,24 +145,24 @@ $(document).ready(function() {
 });
 
 $(document).keydown(function(e) {
-  var fadeTime = 200;
+  var fadeTime = 1000;
   switch (e.which) {
     case 37:
       var prevs = currentSlide.prevAll('.grayslide');
       if (prevs.length > 0) {
-        currentSlide.fadeOut(fadeTime, function() {
+        currentSlide.fadeOut(fadeTime);//, function() {
           currentSlide = prevs.first();
           currentSlide.fadeIn(fadeTime);
-        });
+        // });
       }
       break;
     case 39:
       var nexts = currentSlide.nextAll('.grayslide');
       if (nexts.length > 0) {
-        currentSlide.fadeOut(fadeTime, function() {
+        currentSlide.fadeOut(fadeTime);//, function() {
           currentSlide = nexts.first();
           currentSlide.fadeIn(fadeTime);
-        });
+        // });
       }
       break;
   }

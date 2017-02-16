@@ -5,6 +5,7 @@ $config = Hash.new
 command = ARGV.shift
 
 def configure path
+  STDERR.puts "path: #{path}"
   dir = File.expand_path(path)
   $offset = ''
   loop do
@@ -62,9 +63,12 @@ elsif command == 'code'
       end
     language = " lang=#{language}" if !language.empty?
     code += "[code#{language}\n"
-    code += IO.read(codepath).gsub(/\t/, '  ').chomp
+    src = IO.read(codepath).gsub(/\t/, '  ').chomp
+    code += src
     code += "\n]\n"
   end
+
+  code.gsub!(/\\/, '\\\\\\')
 
   text = IO.read(path)
   if !text.gsub!(/(?<=\[" CODE START\]\n).*?(?=\n\[" CODE END\])/m, code)
@@ -80,8 +84,7 @@ elsif command == 'code'
 end
 
 target = ARGV[0]
-$skin = ARGV[1]
-path = ARGV[2]
+path = ARGV[1]
 configure path
 
 class Token
@@ -108,7 +111,7 @@ class Lexer
     token = nil
     until token && token.type == :EOF
       token = get_token
-      STDERR.puts "#{token.inspect} -- now in #{@states[-1]}"
+      # STDERR.puts "#{token.inspect} -- now in #{@states[-1]}"
       @tokens << token
     end
   end
@@ -461,16 +464,19 @@ class Parser
     @tokens = tokens
     @target = target
     @root = nil
+    @skin = 'bubbles'
     @styles = Hash.new
     @counters = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 
-    @tokens.each do |token|
-      if token.type == :COMMENT
-        if token.text =~ /\broot\s*=\s*(\S+)/
-          @root = $1
-        end
-      end
-    end
+    # @tokens.each do |token|
+      # if token.type == :COMMENT
+        # if token.text =~ /\broot\s*=\s*(\S+)/
+          # @root = $1
+        # elsif token.text =~ /\broot\s*=\s*(\S+)/
+          # @root = $1
+        # end
+      # end
+    # end
 
     if @target == 'wordpress'
       @root = $config['root'] + '/' + $offset
@@ -485,15 +491,6 @@ class Parser
 
   def parse
     dst = ''
-    if @target == 'html'
-      header = IO.read(File.dirname(__FILE__) + "/#{$skin}_header.html")
-      # Header has \0 in it, which is special to gsub.
-      header.gsub!(/(?<=<style>)(?=<\/style>)/, IO.read(File.dirname(__FILE__) + "/#{$skin}_style.css").gsub(/(\\\d)/, '\\\\\1'))
-      # STDERR.puts header
-      utilities_source = IO.read(File.dirname(__FILE__) + "/#{$skin}_utilities.js").gsub(/\\'/, "\\\\\\\\'")
-      header.gsub!(/(?<=<script>)(?=<\/script>)/, utilities_source)
-      dst += header
-    end
 
     @is_in_backtick = false
     @is_in_asterisk = false
@@ -505,7 +502,17 @@ class Parser
     end
 
     if @target == 'html'
-      dst += IO.read(File.dirname(__FILE__) + "/#{$skin}_footer.html")
+      dst += IO.read(File.dirname(__FILE__) + "/#{@skin}_footer.html")
+    end
+
+    if @target == 'html'
+      header = IO.read(File.dirname(__FILE__) + "/#{@skin}_header.html")
+      # Header has \0 in it, which is special to gsub.
+      header.gsub!(/(?<=<style>)(?=<\/style>)/, IO.read(File.dirname(__FILE__) + "/#{@skin}_style.css").gsub(/(\\\d)/, '\\\\\1'))
+      # STDERR.puts header
+      utilities_source = IO.read(File.dirname(__FILE__) + "/#{@skin}_utilities.js").gsub(/\\'/, "\\\\\\\\'")
+      header.gsub!(/(?<=<script>)(?=<\/script>)/, utilities_source)
+      dst = header + dst
     end
 
     dst
@@ -662,6 +669,10 @@ class Parser
     @tokens[@i].type == :LEFT_BRACKET && @tokens[@i + 1].type == :COMMENT && @tokens[@i + 2].type == :RIGHT_BRACKET
   end
 
+  def is_let
+    @tokens[@i].type == :LEFT_BRACKET && @tokens[@i + 1].type == :IDENTIFIER && 'let' == @tokens[@i + 1].text
+  end
+
   def is_block
     @tokens[@i].type == :LEFT_BRACKET && @tokens[@i + 1].type == :IDENTIFIER &&
     (@tokens[@i + 1].text == 'block' ||
@@ -680,7 +691,7 @@ class Parser
 
     # Need a paragraph?
     # puts "checking before #{@tokens[@i].inspect}"
-    needs_paragraph = (count_preceding_linebreaks >= 2 || @i == 0) && !is_comment && !is_block && @tokens[@i].type != :EOL
+    needs_paragraph = (count_preceding_linebreaks >= 2 || @i == 0) && !is_comment && !is_let && !is_block && @tokens[@i].type != :EOL
     dst += "<p class=\"grayblock\">" if needs_paragraph
 
     while first_of_content? @tokens[@i].type
@@ -794,6 +805,18 @@ class Parser
         attributes_string = attributes.reject { |key, _| blacklist.include? key }.map { |key, value| " #{key}=\"#{value}\"" }.join
         dst += "<a href=\"#{attributes['to']}\"#{attributes_string}>#{attributes['title']}</a>"
 
+      elsif command == 'let'
+        if @target != 'wordpress' && attributes.has_key? 'root'
+          @root = attributes['root']
+        end
+
+        if attributes.has_key? 'skin'
+          @skin = attributes['skin']
+        end
+
+      elsif command == 'break'
+        dst += '<br>'
+
       elsif command == "table"
         dst += "<table>\n"
         if @tokens[@i].type == :EOL
@@ -889,15 +912,16 @@ class Parser
       elsif command == "span"
 
       elsif command == "slide"
-        is_vcentered = attributes.has_key?('vcenter') && attributes['vcenter'] == 'true'
+        is_valigned = attributes.has_key?('valign')
         dst += "<div class=\"grayslide#{(attributes.has_key?('fullscreen') && attributes['fullscreen'] == 'true') ? ' fullscreen' : ''}#{attributes.has_key?('class') ? " #{attributes['class']}" : ''}\">"
-        if is_vcentered
-          dst += '<div class="vcenterparent"><div class="vcenterwrapper"><div class="vcentercontent">'
+        if is_valigned
+          dir = attributes['valign']
+          dst += "<div class=\"v#{dir}parent\"><div class=\"v#{dir}wrapper\"><div class=\"v#{dir}content\">"
         end
         while @i < @tokens.length && (first_of_line? @tokens[@i].type)
           dst += line
         end
-        if is_vcentered
+        if is_valigned
           dst += '</div></div></div>'
         end
         dst += '</div>'
@@ -1136,7 +1160,7 @@ EOF
 <textarea name="src">#{code}</textarea>
 <input type="submit"/>
 </form>
-<iframe name=\"mup_frame_#{attributes['id']}\" src=\"\" width=\"#{attributes['width']}\" height=\"#{attributes['height']}\" class="madeupframe"></iframe>
+<iframe name="mup_frame_#{attributes['id']}" src="" width="#{attributes['width']}" height="#{attributes['height']}" class="madeupframe#{attributes.has_key?('class') ? " #{attributes['class']}" : ''}"></iframe>
 <script>
 document.getElementById('mup_form_#{attributes['id']}').submit();
 </script>
