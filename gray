@@ -5,7 +5,7 @@ $config = Hash.new
 command = ARGV.shift
 
 def configure path
-  STDERR.puts "path: #{path}"
+  # STDERR.puts "path: #{path}"
   dir = File.expand_path(path)
   $offset = ''
   loop do
@@ -253,7 +253,8 @@ class Lexer
       Token.new :SEPARATOR, '|'
     elsif @src[@i] == ']'
       @i += 1
-      @states[-1] = :default
+      # @states[-1] = :default
+      @states.pop
       Token.new :RIGHT_BRACKET, ']'
     elsif @src[@i] == '='
       @i += 1
@@ -806,7 +807,7 @@ class Parser
         dst += "<a href=\"#{attributes['to']}\"#{attributes_string}>#{attributes['title']}</a>"
 
       elsif command == 'let'
-        if @target != 'wordpress' && attributes.has_key? 'root'
+        if @target != 'wordpress' && attributes.has_key?('root')
           @root = attributes['root']
         end
 
