@@ -308,6 +308,9 @@ class Lexer
         when '-'
           @states[-1] = :eatspace
           Token.new :BULLET, @token_so_far
+        when '_'
+          @states[-1] = :eatspace
+          Token.new :CHECKBOX, @token_so_far
         when '#'
           get_token_after_hash
         else
@@ -528,13 +531,21 @@ class Parser
       list_type = @tokens[@i + 1].type
     end
 
-    dst += "#{' ' * 2 * indent}<#{list_type == :BULLET ? 'u' : 'o'}l>\n"
+    dst += ' ' * 2 * indent
+    if list_type == :BULLET
+      dst += "<ul>\n"
+    elsif list_type == :CHECKBOX
+      dst += "<ul class=\"gray-todo\">\n"
+    else
+      dst += "<ol>\n"
+    end
     while (indent == 0 && @tokens[@i].type == list_type) || (@tokens[@i].type == :INDENT && @tokens[@i].text.length / 2 == indent && @tokens[@i + 1].type == list_type)
       if @tokens[@i].type == :INDENT
         @i += 1
       end
       @i += 1
       dst += "#{' ' * 2 * (indent + 1)}<li>"
+      dst += '<input type="checkbox" class="gray-todo-checkbox">' if list_type == :CHECKBOX
       dst += content
       if @tokens[@i].type == :EOL
         @i += 1
@@ -552,7 +563,14 @@ class Parser
       end
       dst += "</li>\n"
     end
-    dst += "#{' ' * 2 * indent}</#{list_type == :BULLET ? 'u' : 'o'}l>\n"
+    dst += ' ' * 2 * indent
+    if list_type == :BULLET
+      dst += "</ul>\n"
+    elsif list_type == :CHECKBOX
+      dst += "</ul>\n"
+    else
+      dst += "</ol>\n"
+    end
 
     dst
   end
@@ -601,6 +619,8 @@ class Parser
     elsif @tokens[@i].type == :BULLET
       dst += list 0
     elsif @tokens[@i].type == :INT
+      dst += list 0
+    elsif @tokens[@i].type == :CHECKBOX
       dst += list 0
     else
       dst += content

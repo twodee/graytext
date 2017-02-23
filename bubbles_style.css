@@ -396,3 +396,23 @@ p {
 .madeupframe {
   border: solid 1px #CCCCCC;
 }
+
+ul.gray-todo {
+  list-style-type: none;
+}
+
+ul.gray-todo li {
+  position: relative;
+}
+
+/*
+ We want to checkbox's right edge to be left of the enclosing li. Right will
+ set the child's right edge against the parent's right. Then we add 100% margin
+ on the right to push it all the way left.
+ */
+.gray-todo-checkbox {
+  position: absolute;
+  right: 5px;
+  margin-right: 100%;
+  top: 2px;
+}
