@@ -130,40 +130,115 @@ function raffle(element, list) {
 }
 
 var currentSlide = null;
+var onDeckSlide = null;
+
 $(document).ready(function() {
-  // Hide all slides.
-  $('.grayslide').hide();
-
-  // But not the first.
-  currentSlide = $('.grayslide').first();
-  currentSlide.show();
-
-  // $('.grayslide').dblclick(function() {
-    // $('.grayslide').hide();
-    // $(this).nextAll('.grayslide').show();
-  // });
+  var slides = $('.gray-slide')
+  currentSlide = slides.first();
+  if (slides.size() > 1) {
+    onDeckSlide = slides[1];
+  }
+  document.addEventListener('animationend', onAnimationEnd);
+  currentSlide.addClass('gray-slide-in-lr');
 });
 
 $(document).keydown(function(e) {
   var fadeTime = 1000;
   switch (e.which) {
     case 37:
-      var prevs = currentSlide.prevAll('.grayslide');
+      var prevs = currentSlide.prevAll('.gray-slide');
       if (prevs.length > 0) {
-        currentSlide.fadeOut(fadeTime);//, function() {
-          currentSlide = prevs.first();
-          currentSlide.fadeIn(fadeTime);
-        // });
+        currentSlide.removeClass('gray-slide-in-lr gray-slide-in-rl');
+        currentSlide.addClass('gray-slide-out-rl');
+        currentSlide = prevs.first();
+        if (prevs.size() > 1) {
+          onDeckSlide = prevs[1];
+        } else {
+          onDeckSlide = null;
+        }
+        currentSlide.removeClass('gray-slide-out-lr gray-slide-out-rl');
+        currentSlide.addClass('gray-slide-in-rl');
       }
       break;
     case 39:
-      var nexts = currentSlide.nextAll('.grayslide');
+      var nexts = currentSlide.nextAll('.gray-slide');
       if (nexts.length > 0) {
-        currentSlide.fadeOut(fadeTime);//, function() {
-          currentSlide = nexts.first();
-          currentSlide.fadeIn(fadeTime);
-        // });
+        currentSlide.removeClass('gray-slide-in-lr gray-slide-in-rl');
+        currentSlide.addClass('gray-slide-out-lr');
+        currentSlide = nexts.first();
+        if (nexts.size() > 1) {
+          onDeckSlide = nexts[1];
+        } else {
+          onDeckSlide = null;
+        }
+        currentSlide.removeClass('gray-slide-out-lr gray-slide-out-rl');
+        currentSlide.addClass('gray-slide-in-lr');
       }
       break;
   }
 });
+
+var mupFrames = [];
+
+function onShow(slide) {
+  frames = $(slide).find('.madeup-frame');
+  frames.each(function(i, frame) {
+    loadMadeupFrame(frame);
+  });
+}
+
+function loadMadeupFrame(frame) {
+  var id = frame.name.replace(/mup-frame-/, '');
+
+  // See if frame is already loaded.
+  var iFrame = null;
+  for (var i = 0; iFrame == null && i < mupFrames.length; ++i) {
+    if (mupFrames[i].id == id) {
+      iFrame = i;
+    }
+  }
+
+  // If not loaded, submit the form.
+  if (iFrame == null) { 
+    if (mupFrames.length >= maxMupFrames) {
+      // Sort most recent to least recent.
+      mupFrames.sort(function(a, b) {
+        if (a.viewed_at > b.viewed_at) {
+          return -1;
+        } else if (a.viewed_at < b.viewed_at) {
+          return 1;
+        } else {
+          return 0;
+        }
+      });
+
+      for (var i = maxMupFrames - 1; i < mupFrames.length; ++i) {
+        document.getElementById('mup-frame-' + id).src = 'about:blank';
+      }
+      mupFrames.length = maxMupFrames - 1;
+    }
+
+    document.getElementById(frame.name.replace(/^mup-frame/, 'mup-form')).submit();
+    mupFrames.push({id: id, viewed_at: Date.now()});
+  }
+  
+  // Otherwise, just freshen its timestamp.
+  else {
+    mupFrames[iFrame].viewed_at = Date.now();
+  }
+}
+
+function onDeck(slide) {
+  onShow(slide);
+}
+
+function onHide(slide) {
+}
+
+function onAnimationEnd() {
+  // on deck
+  console.log('done!');
+  if (onDeckSlide != null) {
+    onDeck(onDeckSlide);
+  }
+}

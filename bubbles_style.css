@@ -416,3 +416,7 @@ ul.gray-todo li {
   margin-right: 100%;
   top: 2px;
 }
+
+.gray-wrap {
+  white-space: pre-wrap;
+}

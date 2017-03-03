@@ -26,7 +26,7 @@ body {
   /* font-family: 'News Cycle'; */
   font-family: 'Source Sans Pro';
   color: #000000;
-  margin: 10px;
+  margin: 0;
   height: 100%;
   overflow: hidden;
 
@@ -396,24 +396,18 @@ p {
   overflow: auto;
 }
 
-.madeupframe {
+.madeup-frame {
   border: none;
 }
 
-.grayslide {
+.gray-slide {
   position: absolute;
-  top: 20px;
-  bottom: 20px;
-  left: 20px;
-  right: 20px;
   font-size: 36pt;
-}
-
-.grayslide.fullscreen {
-  top: 0px;
-  bottom: 0px;
-  left: 0px;
-  right: 0px;
+  transform: translateX(-100%);
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
 }
 
 .vcenterparent {
@@ -435,22 +429,37 @@ p {
 }
 
 .vbottomparent {
-  display: table;
-  position: absolute;
-  width: 100%;
-  height: 100%;
+  /* display: table; */
+  /* position: absolute; */
+  /* width: 100%; */
+  /* height: 100%; */
 }
 
 .vbottomwrapper {
-  display: table-cell;
-  vertical-align: bottom;
+  /* display: table-cell; */
+  /* vertical-align: bottom; */
 }
 
 .vbottomcontent {
-  margin-left: 50px;
-  margin-right: auto;
-  margin-bottom: 50px;
-  width: 100%;
+  /* width: 100%; */
+}
+
+.gray-valign-bottom {
+  position: absolute;
+  bottom: 0;
+}
+
+.gray-slide.fullscreen .gray-slide-content {
+  position: absolute;
+  margin: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+}
+
+.gray-slide.not-fullscreen .gray-slide-content {
+  margin: 50px;
 }
 
 .gray-bottom-right {
@@ -463,4 +472,56 @@ p {
   position: fixed;
   right: 0;
   z-index: -100;
+}
+
+.gray-slide-in-lr {
+  animation: gray-slide-in-lr 1.5s forwards;
+}
+
+.gray-slide-in-rl {
+  animation: gray-slide-in-rl 1.5s forwards;
+}
+
+.gray-slide-out-lr {
+  animation: gray-slide-out-lr 1.5s forwards;
+}
+
+.gray-slide-out-rl {
+  animation: gray-slide-out-rl 1.5s forwards;
+}
+
+@keyframes gray-slide-in-lr {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(0%);
+  }
+}
+
+@keyframes gray-slide-in-rl {
+  0% {
+    transform: translateX(100%);
+  }
+  100% {
+    transform: translateX(0%);
+  }
+}
+
+@keyframes gray-slide-out-lr {
+  0% {
+    transform: translateX(0%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+@keyframes gray-slide-out-rl {
+  0% {
+    transform: translateX(0%);
+  }
+  100% {
+    transform: translateX(-100%);
+  }
 }

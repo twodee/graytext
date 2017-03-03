@@ -468,9 +468,12 @@ class Parser
     @tokens = tokens
     @target = target
     @root = nil
+    @madeupurl = 'http://embed.madeup.xyz'
+    @maxmupframes = 8
     @skin = 'bubbles'
     @styles = Hash.new
     @counters = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+    @mups = []
 
     # @tokens.each do |token|
       # if token.type == :COMMENT
@@ -485,8 +488,6 @@ class Parser
     if @target == 'wordpress'
       @root = $config['root'] + '/' + $offset
     end
-    
-    # STDERR.puts @root
   end
 
   def entitize code
@@ -517,6 +518,24 @@ class Parser
       utilities_source = IO.read(File.dirname(__FILE__) + "/#{@skin}_utilities.js").gsub(/\\'/, "\\\\\\\\'")
       header.gsub!(/(?<=<script>)(?=<\/script>)/, utilities_source)
       dst = header + dst
+    end
+
+    if !@mups.empty?
+      dst += <<EOF
+  <script>
+  var maxMupFrames = #{@maxmupframes};
+  var mups = [#{@mups.map { |mup| "'#{mup}'" }.join(', ')}];
+EOF
+
+      if @skin != 'slides'
+        dst += <<EOF
+  mups.forEach(function(mup) {
+    document.getElementById('mup-form-' + mup).submit();
+  });
+EOF
+      end
+
+      dst += '</script>'
     end
 
     dst
@@ -835,6 +854,14 @@ class Parser
           @skin = attributes['skin']
         end
 
+        if attributes.has_key? 'madeupurl'
+          @madeupurl = attributes['madeupurl']
+        end
+
+        if attributes.has_key? 'maxmupframes'
+          @maxmupframes = attributes['maxmupframes']
+        end
+
       elsif command == 'break'
         dst += '<br>'
 
@@ -933,18 +960,22 @@ class Parser
       elsif command == "span"
 
       elsif command == "slide"
+        dst += "<div class=\"gray-slide #{(attributes.has_key?('fullscreen') && attributes['fullscreen'] == 'true') ? '' : 'not-'}fullscreen#{attributes.has_key?('class') ? " #{attributes['class']}" : ''}\">"
+
         is_valigned = attributes.has_key?('valign')
-        dst += "<div class=\"grayslide#{(attributes.has_key?('fullscreen') && attributes['fullscreen'] == 'true') ? ' fullscreen' : ''}#{attributes.has_key?('class') ? " #{attributes['class']}" : ''}\">"
         if is_valigned
           dir = attributes['valign']
-          dst += "<div class=\"v#{dir}parent\"><div class=\"v#{dir}wrapper\"><div class=\"v#{dir}content\">"
+        else
+          dir = 'top'
         end
+
+        dst += %Q{<div class="gray-slide-content gray-valign-#{dir}">}
+
         while @i < @tokens.length && (first_of_line? @tokens[@i].type)
           dst += line
         end
-        if is_valigned
-          dst += '</div></div></div>'
-        end
+
+        dst += '</div>'
         dst += '</div>'
 
       elsif command == "redacted"
@@ -1053,6 +1084,7 @@ class Parser
                 pipe.puts code
                 pipe.close_write
                 code = pipe.read
+                code.gsub!(/<pre>/, '<pre class="gray-wrap">') if attributes['wrap'] == 'true'
                 dst += "<div#{pair_string}>#{code}</div>"
               end
             else
@@ -1176,15 +1208,22 @@ EOF
 <pre>[mup id=#{attributes['id']} width=#{attributes['width']} height=#{attributes['height']}]#{code}[/mup]</pre>
 EOF
           else
+            @mups << attributes['id']
             dst += <<EOF
-<form style="display: none" id="mup_form_#{attributes['id']}" target="mup_frame_#{attributes['id']}" action="http://embed.madeup.xyz" method="post">
+<form style="display: none" id="mup-form-#{attributes['id']}" target="mup-frame-#{attributes['id']}" action="#{@madeupurl}" method="post">
 <textarea name="src">#{code}</textarea>
+EOF
+
+            if @skin == 'slides'
+              dst += <<EOF
+<input type="hidden" name="isPresenting" value="true">
+EOF
+            end
+
+            dst += <<EOF
 <input type="submit"/>
 </form>
-<iframe name="mup_frame_#{attributes['id']}" src="" width="#{attributes['width']}" height="#{attributes['height']}" class="madeupframe#{attributes.has_key?('class') ? " #{attributes['class']}" : ''}"></iframe>
-<script>
-document.getElementById('mup_form_#{attributes['id']}').submit();
-</script>
+<iframe id="mup-frame-#{attributes['id']}" name="mup-frame-#{attributes['id']}" src="" width="#{attributes['width']}" height="#{attributes['height']}" class="madeup-frame#{attributes.has_key?('class') ? " #{attributes['class']}" : ''}"></iframe>
 EOF
           end
 

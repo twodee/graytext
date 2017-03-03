@@ -1,7 +1,7 @@
 function autosize(id) {
   var element = document.getElementById(id);
-  element.width = element.contentWindow.document.body.scrollWidth;
-  element.height = element.contentWindow.document.body.scrollHeight;
+  element.width = element.contentWindow.document.body.clientWidth;
+  element.height = element.contentWindow.document.body.clientHeight;
 }
 
 function lineveil() {

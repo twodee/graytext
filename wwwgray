@@ -1,0 +1,48 @@
+#!/usr/bin/env ruby
+
+require 'net/http'
+
+def port_open?(port)
+  !system("lsof -i:#{port}", out: '/dev/null')
+end
+
+if port_open? 4567
+  require 'sinatra'
+  
+  if ARGV.size > 1
+    STDERR.puts "Usage: #{$0} file.gray"
+    exit 1
+  elsif ARGV.size == 1
+    path = ARGV[0]
+  else
+    path = nil
+  end
+
+  get %r{/(.+)} do |file|
+    send_file file
+  end
+
+  get '/' do
+    if path
+      `gray generate html #{path}`
+    else
+      'n/a'
+    end
+  end
+
+  put %r{(/.*)} do |file|
+    path = file
+    puts "now serving #{path}"
+    Dir.chdir(File.dirname(path))
+    path = File.basename(path)
+  end
+else
+  if ARGV.size != 1
+    STDERR.puts "Usage: #{$0} file.gray"
+    exit 1
+  end
+  path = ARGV[0]
+
+  http = Net::HTTP.new('0.0.0.0', 4567)
+  response = http.send_request('PUT', File.absolute_path(path), '')
+end
