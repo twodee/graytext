@@ -237,7 +237,6 @@ function onHide(slide) {
 
 function onAnimationEnd() {
   // on deck
-  console.log('done!');
   if (onDeckSlide != null) {
     onDeck(onDeckSlide);
   }
