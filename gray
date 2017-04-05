@@ -407,8 +407,9 @@ class Lexer
   end
 
   def get_block_code_token
-    if @src[@i..-1] =~ /\A([ \t]*\])/
-      @i += $1.length
+    # if @src[@i..-1] =~ /\A([ \t]*\])/
+    if @src[@i..-1] =~ /\A\]/
+      @i += 1
       @states.pop
       Token.new :RIGHT_BRACKET, ']'
     elsif @src[@i] == "\n"
