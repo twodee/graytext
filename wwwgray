@@ -6,11 +6,18 @@ def port_open?(port)
   !system("lsof -i:#{port}", out: '/dev/null')
 end
 
+is_parent = true
+$log = open("#{ENV['HOME']}/.junk/gray.log", 'a')
+
 if port_open? 4567
+  puts "foo"
+
   pid = Process.fork
   if pid.nil?
-    require 'sinatra'
+    is_parent = false
 
+    require 'sinatra'
+ 
     $stderr.reopen(File.new('/dev/null', 'w'))
     $stdout.reopen(File.new('/dev/null', 'w'))
     $path = nil
@@ -29,7 +36,8 @@ if port_open? 4567
 
     put %r{(/.*)} do |file|
       $path = file
-      puts "now serving #{$path}"
+      $log.puts "SERVER: now serving #{$path}"
+      $log.flush
       Dir.chdir(File.dirname($path))
       $path = File.basename($path)
     end
@@ -39,11 +47,13 @@ if port_open? 4567
       sleep(1)
     end
     Process.detach(pid)
-    if ARGV.size > 0
-      path = ARGV[0]
-      http = Net::HTTP.new('0.0.0.0', 4567)
-      response = http.send_request('PUT', File.absolute_path(path), '')
-    end
   end
 end
 
+if is_parent && ARGV.size > 0
+  path = ARGV[0]
+  $log.puts "CLIENT: requesting #{path}"
+  $log.flush
+  http = Net::HTTP.new('0.0.0.0', 4567)
+  response = http.send_request('PUT', File.absolute_path(path), '')
+end

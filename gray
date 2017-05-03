@@ -111,7 +111,7 @@ class Lexer
     token = nil
     until token && token.type == :EOF
       token = get_token
-      STDERR.puts "#{token.inspect} -- now in #{@states[-1]}"
+      # STDERR.puts "#{token.inspect} -- now in #{@states[-1]}"
       @tokens << token
     end
   end
@@ -651,7 +651,6 @@ EOF
     attributes = Hash.new
     while @tokens[@i].type == :IDENTIFIER
       key = @tokens[@i].text
-      STDERR.puts "key: #{key}"
       @i += 1
       if @tokens[@i].type == :EQUALS
         @i += 1
@@ -805,7 +804,7 @@ EOF
       @i += 1
       attributes = parse_attributes
 
-      STDERR.puts "attributes: #{attributes.inspect}"
+      # STDERR.puts "attributes: #{attributes.inspect}"
 
       # Expand style key.
       if attributes.has_key? 'style'
@@ -1074,10 +1073,18 @@ EOF
             dst += '</div>'
           else
             if attributes.has_key? 'lang'
-              IO.popen("coderay -#{attributes['lang']} -div", 'r+') do |pipe|
+              # IO.popen("coderay -#{attributes['lang']} -div", 'r+') do |pipe|
+                # pipe.puts code
+                # pipe.close_write
+                # code = pipe.read
+                # code.gsub!(/<pre>/, '<pre class="gray-wrap">') if attributes['wrap'] == 'true'
+                # dst += "<div#{pair_string}>#{code}</div>"
+              # end
+              IO.popen("pygmentize -Ostyle=colorful -f html -l #{attributes['lang']}", 'r+') do |pipe|
                 pipe.puts code
                 pipe.close_write
                 code = pipe.read
+                STDERR.puts code
                 code.gsub!(/<pre>/, '<pre class="gray-wrap">') if attributes['wrap'] == 'true'
                 dst += "<div#{pair_string}>#{code}</div>"
               end
