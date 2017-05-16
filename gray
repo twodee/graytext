@@ -555,10 +555,10 @@ EOF
       end
       if @i + 1 < @tokens.length && @tokens[@i].type == :INDENT && @tokens[@i].text.length / 2 > indent && (@tokens[@i + 1].type == :BULLET || @tokens[@i + 1].type == :INT)
         dst += "\n"
-        puts @tokens[@i].text.length / 2
-        puts indent
-        puts @tokens[@i].inspect
-        puts @tokens[@i + 1].inspect
+        # puts @tokens[@i].text.length / 2
+        # puts indent
+        # puts @tokens[@i].inspect
+        # puts @tokens[@i + 1].inspect
         dst += list indent + 1
         dst += ' ' * 2 * indent
       end
@@ -1084,7 +1084,7 @@ EOF
                 pipe.puts code
                 pipe.close_write
                 code = pipe.read
-                STDERR.puts code
+                # STDERR.puts code
                 code.gsub!(/<pre>/, '<pre class="gray-wrap">') if attributes['wrap'] == 'true'
                 dst += "<div#{pair_string}>#{code}</div>"
               end
