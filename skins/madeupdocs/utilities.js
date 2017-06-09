@@ -128,3 +128,86 @@ function raffle(element, list) {
     list.splice(list.length - 1);
   }
 }
+
+document.addEventListener('DOMContentLoaded', function() {
+
+  // Inject Ace editors on all the code snippets.
+  var editors = document.querySelectorAll('.text-editor');
+  editors.forEach(function(editor) {
+    var editor = ace.edit(editor);
+    editor.$blockScrolling = Infinity;
+    editor.renderer.$cursorLayer.element.style.display = "none";
+    editor.setTheme("ace/theme/iplastic");
+    editor.getSession().setMode("ace/mode/madeup");
+    editor.setOptions({
+      maxLines: 15,
+      showPrintMargin: false,
+      highlightActiveLine: false,
+      highlightGutterLine: false,
+      readOnly: true,
+      fontSize: 16
+    });
+    editor.renderer.setScrollMargin(10, 10);
+  });
+
+  // Inject Blockly workspaces on all the code snippets.
+  var switchers = document.querySelectorAll('.mup-switcher');
+  var workspaces = [];
+  switchers.forEach(function(switcher) {
+    var textEditor = switcher.children[0];
+    var blocksEditor = switcher.children[1];
+
+    var workspace = Blockly.inject(blocksEditor, {
+      comments: false,
+      toolbox: false,
+      trashcan: false,
+      readOnly: true,
+      scrollbars: false,
+      zoom: false
+    });
+
+    // Fit the container exactly around the blocks.
+    var sExpression = blocksEditor.firstElementChild.innerHTML;
+    parse(new Peeker(sExpression), workspace);
+    var metrics = workspace.getMetrics();
+    blocksEditor.style.height = metrics.contentHeight + 'px';
+    blocksEditor.style.width = metrics.contentWidth + 'px';
+    Blockly.svgResize(workspace);
+
+    blocksEditor.style.display = 'none';
+
+    workspaces.push(workspace);
+  });
+
+  document.getElementById('to-text').onclick = function() {
+    var switchers = document.querySelectorAll('.mup-switcher');
+    switchers.forEach(function(switcher) {
+      var textEditor = switcher.children[0];
+      var blocksEditor = switcher.children[1];
+      textEditor.style.display = 'block';
+      blocksEditor.style.display = 'none';
+    });
+    return false;
+  };
+
+  document.getElementById('to-blocks').onclick = function() {
+    var switchers = document.querySelectorAll('.mup-switcher');
+    switchers.forEach(function(switcher) {
+      var textEditor = switcher.children[0];
+      var blocksEditor= switcher.children[1];
+      textEditor.style.display = 'none';
+      blocksEditor.style.display = 'block';
+      workspaces.forEach(function(workspace) {
+        Blockly.svgResize(workspace);
+      });
+    });
+    return false;
+  };
+});
+
+// window.addEventListener('resize', function() {
+  // workspaces.forEach(function(workspace) {
+    // console.log("resize");
+    // Blockly.svgResize(workspace);
+  // });
+// });

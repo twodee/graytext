@@ -12,7 +12,7 @@ html {
 }
 
 body {
-  background: rgb(95%, 95%, 95%);
+  background: white;
   font-family: 'Source Sans Pro';
   color: #555555;
   margin: 10px;
@@ -222,3 +222,31 @@ body .vg { color: #dd7700; font-weight: bold } /* Name.Variable.Global */
 body .vi { color: #3333BB } /* Name.Variable.Instance */
 body .vm { color: #996633 } /* Name.Variable.Magic */
 body .il { color: #0000DD; font-weight: bold } /* Literal.Number.Integer.Long */
+
+.text-editor {
+  display: block;
+}
+
+.block-editor {
+  margin: auto;
+}
+
+.blocklySvg {
+  background-color: rgba(0, 0, 0, 0) !important;
+}
+
+.blocklyMainBackground {
+  stroke: none !important;
+}
+
+.s-expression {
+  display: none;
+}
+
+#mode-switcher {
+  text-align: right;
+}
+
+footer {
+  text-align: right;
+}

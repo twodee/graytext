@@ -1,5 +1,7 @@
 #!/usr/bin/env ruby
 
+require 'tempfile'
+
 $config = Hash.new
 
 command = ARGV.shift
@@ -214,7 +216,7 @@ class Lexer
     end
 
     if @src[@i] == "\n"
-      if @id == 'code' || @id == 'lineveil' || @id == 'madeup' || @id == 'latex' # Any code blocks
+      if @id == 'code' || @id == 'lineveil' || @id == 'madeup' || @id == 'css' || @id == 'mup' || @id == 'latex' # Any code blocks
         @states[-1] = :blockcode
       elsif @id == 'block' || @id == 'listveil' || @id == 'slide'
         @states[-1] = :linestart
@@ -456,6 +458,7 @@ class Parser
     @styles = Hash.new
     @counters = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
     @mups = []
+    @css = ''
 
     # @tokens.each do |token|
       # if token.type == :COMMENT
@@ -495,8 +498,7 @@ class Parser
     if @target == 'html'
       header = IO.read(File.dirname(__FILE__) + "/skins/#{@skin}/header.html")
       # Header has \0 in it, which is special to gsub.
-      header.gsub!(/(?<=<style>)(?=<\/style>)/, IO.read(File.dirname(__FILE__) + "/skins/#{@skin}/style.css").gsub(/(\\\d)/, '\\\\\1'))
-      # STDERR.puts header
+      header.gsub!(/(?<=<style>)(?=<\/style>)/, IO.read(File.dirname(__FILE__) + "/skins/#{@skin}/style.css").gsub(/(\\\d)/, '\\\\\1') + "\n\n/* Custom CSS */\n#{@css}")
       utilities_source = IO.read(File.dirname(__FILE__) + "/skins/#{@skin}/utilities.js").gsub(/\\'/, "\\\\\\\\'")
       header.gsub!(/(?<=<script>)(?=<\/script>)/, utilities_source)
       dst = header + dst
@@ -840,6 +842,32 @@ EOF
         if attributes.has_key?('parent')
           @styles[key] = @styles[attributes['parent']] + @styles[key]
         end
+
+      elsif command == 'css'
+        if @tokens[@i].type == :EOL
+          @i += 1
+        else
+          raise 'expected EOL'
+        end
+
+        lines = []
+        while @i < @tokens.length && @tokens[@i].type == :CODE
+          lines << @tokens[@i].text
+          @i += 1
+          if @tokens[@i].type == :EOL
+            @i += 1
+          else
+            raise "expected EOL after code, found #{@tokens[@i].type}"
+          end
+        end 
+
+        if !attributes.has_key?('selector')
+          STDERR.puts "CSS blocks need selector defined."
+          exit 1
+        end
+        selector = attributes['selector']
+
+        @css += "#{selector} {\n" + lines.map { |line| "  #{line};" }.join("\n") + "\n}\n\n"
 
       elsif command == 'let'
         if @target != 'wordpress' && attributes.has_key?('root')
@@ -1190,6 +1218,26 @@ EOF
             li += 1
           end
           dst += '</pre>'
+        elsif command == 'mup'
+          code = ''
+          while @i < @tokens.length && (@tokens[@i].type != :RIGHT_BRACKET)
+            code += @tokens[@i].text
+            @i += 1
+          end
+          code.gsub!(/'/, '\\\\\'')
+
+          tmp = Tempfile.new('mup')
+          tmp.write code
+          tmp.close
+          tree = `../../build/merp --tree #{tmp.path}`
+
+          dst += <<EOF
+<div class="mup-switcher">
+  <div class="text-editor">#{code.chomp}</div>
+  <div class="block-editor"><div class="s-expression">#{tree}</div></div>
+</div>
+EOF
+
         elsif command == 'madeup'
           ['id', 'width', 'height'].each do |key|
             if !attributes.has_key? key
