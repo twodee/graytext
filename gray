@@ -216,7 +216,7 @@ class Lexer
     end
 
     if @src[@i] == "\n"
-      if @id == 'code' || @id == 'lineveil' || @id == 'madeup' || @id == 'css' || @id == 'mup' || @id == 'latex' # Any code blocks
+      if @id == 'code' || @id == 'lineveil' || @id == 'madeup' || @id == 'css' || @id == 'mup' || @id == 'latex' || @id == 'texmath' # Any code blocks
         @states[-1] = :blockcode
       elsif @id == 'block' || @id == 'listveil' || @id == 'slide'
         @states[-1] = :linestart
@@ -982,7 +982,12 @@ EOF
           dst += "<script>generateTimedown(#{attributes['seconds']}, 'timedown1');</script>"
         end
       elsif command == "span"
-
+        s = attributes.map { |key, value| "#{key}=\"#{value}\"" }.join
+        dst += "<span #{s}>"
+        while @i < @tokens.length && (first_of_line? @tokens[@i].type)
+          dst += line
+        end
+        dst += "</span>"
       elsif command == "slide"
         dst += "<div class=\"gray-slide #{(attributes.has_key?('fullscreen') && attributes['fullscreen'] == 'true') ? '' : 'not-'}fullscreen#{attributes.has_key?('class') ? " #{attributes['class']}" : ''}\">"
 
@@ -1012,31 +1017,30 @@ EOF
         end
 
         if attributes.has_key?('caption')
-          # s = attributes.map { |key, value| (key == 'src' || key == 'width' || key == 'height' || key == 'selflink' || (key == 'style' && attributes.has_key?('caption'))) ? '' : " #{key}=\"#{value}\"" }.join
-          # if attributes.has_key? 'caption'
-            # dst += "<br><span"
-            # if attributes.has_key? 'width'
-              # dst += " style=\"width: #{attributes['width']}; margin-left: auto; margin-right: auto;\""
-            # end
-            # dst += "><i><small>" + attributes['caption'] + "</small></i></span>"
-            # dst += "<figcaption>#{attributes['caption']}</figcaption>"
-          # end
-          # dst += "</figure>"
-        else
-          s = attributes.map { |key, value| (key == 'src' || key == 'selflink') ? '' : " #{key}=\"#{value}\"" }.join
- 
-          is_selflink = attributes.has_key?('selflink') && attributes['selflink'] == 'true'
-          if is_selflink
-            dst += "<a href=\"#{path}\">"
-          end
-
-          dims = ['width', 'height'].reject { |a| !attributes.has_key?(a) }.map { |a| " #{a}=\"#{attributes[a]}\"" }.join
-          dst += "<img src=\"#{path}\"#{s}>"
-
-          if is_selflink
-            dst += "</a>"
-          end
+          style = attributes.has_key?('style') ? " style=\"#{attributes['style']}\"" : ''
+          dst += "<figure#{style}>"
         end
+
+        s = attributes.map { |key, value| (key == 'src' || key == 'selflink' || (attributes.has_key?('caption') && key == 'style')) ? '' : " #{key}=\"#{value}\"" }.join
+        if attributes.has_key?('caption')
+          s += ' width="100%"'
+        end
+
+        is_selflink = attributes.has_key?('selflink') && attributes['selflink'] == 'true'
+        if is_selflink
+          dst += "<a href=\"#{path}\">"
+        end
+
+        dst += "<img src=\"#{path}\"#{s}>"
+
+        if is_selflink
+          dst += "</a>"
+        end
+
+        if attributes.has_key? 'caption'
+          dst += "<figcaption>#{attributes['caption']}</figcaption></figure>"
+        end
+
       else
         pair_string = attributes.map { |key, value| " #{key}=\"#{value}\"" }.join
 
@@ -1147,6 +1151,20 @@ click for a random term...
 </div>
 EOF
           end
+
+        elsif command == 'texmath'
+          dst += '<div class="mathjax">$$'
+          while @i < @tokens.length && @tokens[@i].type == :CODE
+            dst += @tokens[@i].text
+            @i += 1
+
+            if @tokens[@i].type == :EOL
+              @i += 1
+            else
+              raise "expected EOL after texmath, found #{@tokens[@i].type}"
+            end
+          end
+          dst += '$$</div>'
 
         elsif command == 'latex'
           ['id'].each do |key|

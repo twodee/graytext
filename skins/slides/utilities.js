@@ -142,10 +142,12 @@ $(document).ready(function() {
   currentSlide.addClass('gray-slide-in-lr');
 });
 
+var dir = null;
 $(document).keydown(function(e) {
-  var fadeTime = 1000;
   switch (e.which) {
     case 37:
+      console.log("saw key");
+      dir = 'left';
       var prevs = currentSlide.prevAll('.gray-slide');
       if (prevs.length > 0) {
         currentSlide.removeClass('gray-slide-in-lr gray-slide-in-rl');
@@ -161,6 +163,7 @@ $(document).keydown(function(e) {
       }
       break;
     case 39:
+      dir = 'right';
       var nexts = currentSlide.nextAll('.gray-slide');
       if (nexts.length > 0) {
         currentSlide.removeClass('gray-slide-in-lr gray-slide-in-rl');
@@ -235,9 +238,20 @@ function onDeck(slide) {
 function onHide(slide) {
 }
 
-function onAnimationEnd() {
+function onAnimationEnd(e) {
   // on deck
   if (onDeckSlide != null) {
     onDeck(onDeckSlide);
   }
+
+  // if (currentSlide != null) {
+    // currentSlide.removeClass('gray-slide-out-lr gray-slide-out-rl');
+    // if (dir == 'left') {
+      // currentSlide.addClass('gray-slide-in-rl');
+      // dir = null;
+    // } else if (dir == 'right') {
+      // currentSlide.addClass('gray-slide-in-lr');
+      // dir = null;
+    // }
+  // }
 }
