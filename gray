@@ -1105,20 +1105,23 @@ EOF
             dst += '</div>'
           else
             if attributes.has_key? 'lang'
-              # IO.popen("coderay -#{attributes['lang']} -div", 'r+') do |pipe|
-                # pipe.puts code
-                # pipe.close_write
-                # code = pipe.read
-                # code.gsub!(/<pre>/, '<pre class="gray-wrap">') if attributes['wrap'] == 'true'
-                # dst += "<div#{pair_string}>#{code}</div>"
-              # end
-              IO.popen("pygmentize -Ostyle=colorful -f html -l #{attributes['lang']}", 'r+') do |pipe|
-                pipe.puts code
-                pipe.close_write
-                code = pipe.read
-                # STDERR.puts code
-                code.gsub!(/<pre>/, '<pre class="gray-wrap">') if attributes['wrap'] == 'true'
-                dst += "<div#{pair_string}>#{code}</div>"
+              if attributes['lang'] == 'madeup'
+                IO.popen("coderay -#{attributes['lang']} -div", 'r+') do |pipe|
+                  pipe.puts code
+                  pipe.close_write
+                  code = pipe.read
+                  code.gsub!(/<pre>/, '<pre class="gray-wrap">') if attributes['wrap'] == 'true'
+                  dst += "<div#{pair_string}>#{code}</div>"
+                end
+              else
+                IO.popen("pygmentize -Ostyle=colorful -f html -l #{attributes['lang']}", 'r+') do |pipe|
+                  pipe.puts code
+                  pipe.close_write
+                  code = pipe.read
+                  # STDERR.puts code
+                  code.gsub!(/<pre>/, '<pre class="gray-wrap">') if attributes['wrap'] == 'true'
+                  dst += "<div#{pair_string}>#{code}</div>"
+                end
               end
             else
               dst += "<pre#{pair_string}>"
