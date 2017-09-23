@@ -1,0 +1,522 @@
+/*
+Theme Name: Midlife
+Theme URI: http://www.twodee.org
+Author: Chris Johnson
+Description: A theme for me in my 30s.
+Version: 0.1
+*/
+
+html {
+  box-sizing: border-box;
+  margin: 0;
+	font-size: 62.5%;
+}
+
+*, *:before, *:after {
+  box-sizing: inherit;
+}
+
+.indented {
+  margin-left: 20px;
+}
+
+#whole {
+  background: white;
+  box-shadow: 5px 0 15px 0px #AAAAAA,
+             -5px 0 15px 0px #AAAAAA;
+}
+
+body {
+  background: rgb(85%, 85%, 85%);
+  /* background: white; */
+  /* font-family: 'EB Garamond'; */
+  /* font-family: 'News Cycle'; */
+  /* font-family: 'Source Sans Pro'; */
+  font-family: 'Merriweather';
+  letter-spacing: 0.01rem;
+  font-size: 1.7rem;
+  line-height: 1.55em;
+  color: #555555;
+  margin: 0;
+  /* margin-right: 20px; */
+  margin-left: auto;
+  margin-right: auto;
+  width: 960px;
+
+  /* I can't have this here if I want floats to wrap? */
+  /* width: 960px; */
+}
+
+h1 {
+  color: rgb(50%, 60%, 70%);
+  font-family: 'Contrail One', sans;
+  font-size: 6.5rem;
+  /* margin-top: 10px; */
+  margin-bottom: 25px;
+  font-weight: bold;
+}
+
+.titlelink {
+  text-decoration: none;
+  color: rgb(50%, 60%, 70%);
+}
+
+h2 {
+  margin-top: 5px;
+  margin-bottom: 20px;
+  color: rgb(65%, 75%, 85%);
+  font-family: 'Oswald', sans;
+  font-size: 3.5rem;
+}
+
+.h2link {
+  text-decoration: none;
+  color: rgb(55%, 65%, 75%);
+}
+
+h3 {
+  font-family: 'Merriweather Sans', sans;
+  font-weight: bold;
+  font-size: 22pt;
+  color: rgb(80%, 40%, 40%);
+  margin-bottom: 0px;
+}
+
+h4 {
+  font-family: 'Merriweather Sans', sans;
+  font-weight: bold;
+  font-size: 16pt;
+  color: rgb(75%, 55%, 55%);
+  margin-bottom: 2px;
+  margin-top: 25px;
+}
+
+h5 {
+  font-style: italic;
+  font-size: 14pt;
+  margin-bottom: 0px;
+  color: rgb(55%, 55%, 55%);
+}
+
+h6 {
+  font-weight: bold;
+  font-size: 12pt;
+  color: rgb(75%, 55%, 55%);
+}
+
+.bubble {
+  width: 100%;
+  display: block;
+  /* background: #ffffff; */
+  /* box-shadow: rgba(0,0,0,0.2) 0px 2px 3px, inset rgba(0,0,0,0.2) 0px -1px 2px; */
+  /* border-radius: 20px; */
+  padding: 20px;
+  margin: 0px 0px;
+  margin-bottom: 20px;
+}
+
+.hcenter {
+  width: 100%;
+  margin-left: auto;
+  margin-right: auto;
+  text-align: center;
+}
+
+.column {
+  float: left;
+  padding: 0px;
+  margin-left: 20px;
+  margin-right: 0px;
+}
+
+.left2 {
+  width: 450px;
+}
+
+.right2 {
+  width: 450px;
+}
+
+.left3 {
+  width: 685px;
+}
+
+.right1 {
+  width: 215px;
+}
+
+.all4 {
+  width: 920px;
+  clear: both;
+  margin: 0;
+  /* margin-left: 20px; */
+  /* margin-right: 0px; */
+  /* margin-top: 20px; */
+  /* margin-bottom: 20px; */
+  padding-left: 40px;
+}
+
+.postTitle {
+  margin-bottom: 0;
+  display: inline-block;
+}
+
+.byline {
+  margin-top: 0;
+  color: rgb(60%, 60%, 60%);
+  font-size: small;
+}
+
+.navlist {
+  list-style-type: none;
+  overflow: hidden;
+  margin-left: 0;
+  padding: 0;
+  /* background-color: #CCCCCC; */
+}
+
+a {
+  text-decoration: none;
+  font-weight: bold;
+  color: #483d8b;
+}
+
+/*
+ul { 
+  list-style-type: none;
+}
+
+li {
+  position: relative;
+}
+
+ul li:before {
+  content: '\002022';
+  padding: 0 10px 0 0;
+  position: absolute;
+  top: 0;
+  left: -10px;
+}
+*/
+
+.navlist li {
+  float: left;
+}
+
+.navlist li a {
+  display: inline-block;
+  text-decoration: none;
+  color: rgb(70%, 50%, 50%);
+  padding-left: 10px;
+  padding-right: 10px;
+}
+
+.navlist li form {
+  padding-left: 10px;
+}
+
+.navlist li:after {
+  content: '|'
+}
+
+.navlist li:first-child a {
+  padding-left: 0;
+}
+
+.navlist li:last-child:after {
+  content: ''
+}
+
+/* Remove smiley face. */
+img#wpstats {
+  display:none;
+}
+
+/* .navlist li:first-child { */
+  /* margin-left: 0; */
+  /* padding-left: 0; */
+/* } */
+
+pre {
+  box-shadow: 0 1px 0 #ffffff, inset 0 1px 1px rgba(0, 0, 0, 0.2);
+  box-sizing: border-box;
+  background: #f4f4f4;
+  border: 1px solid #aaaaaa;
+  border-bottom-color: #cccccc;
+  border-radius: 2px;
+  height: auto;
+  margin: 10px 0px;
+  outline: none;
+  padding: 6px 10px;
+  vertical-align: middle;
+  width: 100%;
+  overflow: auto;
+	line-height: 1.4em;
+}
+
+.afterheading {
+  margin-top: 10px;
+}
+
+th, td, table {
+	border: 1px solid #dddddd;
+  padding: 5px;
+}
+
+th {
+	border: 1px solid #dddddd;
+	border-bottom: 3px solid #dddddd;
+	/* border-top: 1px solid #333333; */
+}
+
+table {
+	border-collapse: collapse;
+  margin: 1.6em auto;
+}
+
+th, td {
+	/* padding: .3em; */
+}
+
+.flashback_right {
+  /* display: inline-block; */
+  /* vertical-align: middle; */
+  text-align: center;
+  /* max-width: 200px; */
+  /* background: #CCCCCC; */
+  /* width: 200px; */
+}
+
+.flashback_image {
+  text-align: center;
+  /* display: inline-block; */
+  /* vertical-align: middle; */
+  /* margin-right: 10px; */
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+  width: 300px;
+}
+
+.flashback_link {
+}
+
+img.size-full {
+  max-width: 640px;
+  height: auto;
+  display: block;
+}
+
+.wp-caption-text {
+  margin-top: 0;
+  font-family: 'Open Sans', sans-serif;
+  font-style: italic;
+  font-size: 10pt;
+}
+
+.graycentered {
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.graysignature {
+  display: block;
+  margin-left: 400px;
+}
+
+.graysignature > * {
+  display: block;
+  margin-top: 5px;
+  margin-bottom: 5px;
+}
+
+code {
+  white-space: pre;
+  background-color: #f7f7f9;
+  padding: 2px 4px;
+  border: 1px solid #e1e1e8;
+  border-radius: 3px;
+  color: #d14;
+}
+
+.scrambled {
+  clear: both;
+  list-style-type: none;
+  margin-left: 0;
+  padding-left: 0;
+  box-shadow: 0 1px 0 #ffffff, inset 0 1px 1px rgba(0, 0, 0, 0.2);
+  box-sizing: border-box;
+  background: #f4f4f4;
+  border: 1px solid #aaaaaa;
+  border-bottom-color: #cccccc;
+  border-radius: 2px;
+  height: auto;
+  margin: 0;
+  outline: none;
+  padding: 6px 10px;
+  vertical-align: middle;
+  width: 100%;
+  overflow: auto;
+}
+
+.scrambled li {
+  margin-left: 0;
+  margin: 0;
+  padding: 0;
+}
+
+.scrambled li pre {
+  box-shadow: 0 0px 0 #ffffff, inset 0 0px 0px rgba(0, 0, 0, 0.2);
+  background-color: transparent;
+  border: 0px;
+  height: auto;
+  margin: 0;
+  padding: 0;
+  outline: none;
+  vertical-align: middle;
+  width: 100%;
+}
+
+.scramblebox {
+  position: relative;
+}
+
+.scramble {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+}
+
+figure {
+  margin: 0px 0px;
+}
+
+figcaption {
+  display: block;
+  font-style: italic;
+  font-size: small;
+}
+
+figure br {
+  display: none;
+}
+
+.lineveil {
+  white-space: pre-wrap;
+}
+
+.grayblock {
+  margin-top: 15px;
+  margin-bottom: 15px;
+}
+
+/* Superseded by .grayblock. */
+p {
+  margin-top: 3px;
+  margin-bottom: 10px;
+}
+
+/* jQuery's slideDown/slideUp were jumping around without this. */
+.togglee {
+  overflow: auto;
+}
+
+.madeupframe {
+  border: solid 1px #CCCCCC;
+}
+
+ul.gray-todo {
+  list-style-type: none;
+}
+
+ul.gray-todo li {
+  position: relative;
+}
+
+/*
+ We want to checkbox's right edge to be left of the enclosing li. Right will
+ set the child's right edge against the parent's right. Then we add 100% margin
+ on the right to push it all the way left.
+ */
+.gray-todo-checkbox {
+  position: absolute;
+  right: 5px;
+  margin-right: 100%;
+  top: 2px;
+}
+
+.gray-wrap {
+  white-space: pre-wrap;
+}
+
+td.linenos { background-color: #f0f0f0; padding-right: 10px; }
+span.lineno { background-color: #f0f0f0; padding: 0 5px 0 5px; }
+body .hll { background-color: #ffffcc }
+body .c { color: #888888 } /* Comment */
+body .err { color: #FF0000; background-color: #FFAAAA } /* Error */
+body .k { color: #008800; font-weight: bold } /* Keyword */
+body .o { color: #333333 } /* Operator */
+body .ch { color: #888888 } /* Comment.Hashbang */
+body .cm { color: #888888 } /* Comment.Multiline */
+body .cp { color: #557799 } /* Comment.Preproc */
+body .cpf { color: #888888 } /* Comment.PreprocFile */
+body .c1 { color: #888888 } /* Comment.Single */
+body .cs { color: #cc0000; font-weight: bold } /* Comment.Special */
+body .gd { color: #A00000 } /* Generic.Deleted */
+body .ge { font-style: italic } /* Generic.Emph */
+body .gr { color: #FF0000 } /* Generic.Error */
+body .gh { color: #000080; font-weight: bold } /* Generic.Heading */
+body .gi { color: #00A000 } /* Generic.Inserted */
+body .go { color: #888888 } /* Generic.Output */
+body .gp { color: #c65d09; font-weight: bold } /* Generic.Prompt */
+body .gs { font-weight: bold } /* Generic.Strong */
+body .gu { color: #800080; font-weight: bold } /* Generic.Subheading */
+body .gt { color: #0044DD } /* Generic.Traceback */
+body .kc { color: #008800; font-weight: bold } /* Keyword.Constant */
+body .kd { color: #008800; font-weight: bold } /* Keyword.Declaration */
+body .kn { color: #008800; font-weight: bold } /* Keyword.Namespace */
+body .kp { color: #003388; font-weight: bold } /* Keyword.Pseudo */
+body .kr { color: #008800; font-weight: bold } /* Keyword.Reserved */
+body .kt { color: #333399; font-weight: bold } /* Keyword.Type */
+body .m { color: #6600EE; font-weight: bold } /* Literal.Number */
+body .s { background-color: #fff0f0 } /* Literal.String */
+body .na { color: #0000CC } /* Name.Attribute */
+body .nb { color: #007020 } /* Name.Builtin */
+body .nc { color: #BB0066; font-weight: bold } /* Name.Class */
+body .no { color: #003366; font-weight: bold } /* Name.Constant */
+body .nd { color: #555555; font-weight: bold } /* Name.Decorator */
+body .ni { color: #880000; font-weight: bold } /* Name.Entity */
+body .ne { color: #FF0000; font-weight: bold } /* Name.Exception */
+body .nf { color: #0066BB; font-weight: bold } /* Name.Function */
+body .nl { color: #997700; font-weight: bold } /* Name.Label */
+body .nn { color: #0e84b5; font-weight: bold } /* Name.Namespace */
+body .nt { color: #007700 } /* Name.Tag */
+body .nv { color: #996633 } /* Name.Variable */
+body .ow { color: #000000; font-weight: bold } /* Operator.Word */
+body .w { color: #bbbbbb } /* Text.Whitespace */
+body .mb { color: #6600EE; font-weight: bold } /* Literal.Number.Bin */
+body .mf { color: #6600EE; font-weight: bold } /* Literal.Number.Float */
+body .mh { color: #005588; font-weight: bold } /* Literal.Number.Hex */
+body .mi { color: #0000DD; font-weight: bold } /* Literal.Number.Integer */
+body .mo { color: #4400EE; font-weight: bold } /* Literal.Number.Oct */
+body .sa { background-color: #fff0f0 } /* Literal.String.Affix */
+body .sb { background-color: #fff0f0 } /* Literal.String.Backtick */
+body .sc { color: #0044DD } /* Literal.String.Char */
+body .dl { background-color: #fff0f0 } /* Literal.String.Delimiter */
+body .sd { color: #DD4422 } /* Literal.String.Doc */
+body .s2 { background-color: #fff0f0 } /* Literal.String.Double */
+body .se { color: #666666; font-weight: bold; background-color: #fff0f0 } /* Literal.String.Escape */
+body .sh { background-color: #fff0f0 } /* Literal.String.Heredoc */
+body .si { background-color: #eeeeee } /* Literal.String.Interpol */
+body .sx { color: #DD2200; background-color: #fff0f0 } /* Literal.String.Other */
+body .sr { color: #000000; background-color: #fff0ff } /* Literal.String.Regex */
+body .s1 { background-color: #fff0f0 } /* Literal.String.Single */
+body .ss { color: #AA6600 } /* Literal.String.Symbol */
+body .bp { color: #007020 } /* Name.Builtin.Pseudo */
+body .fm { color: #0066BB; font-weight: bold } /* Name.Function.Magic */
+body .vc { color: #336699 } /* Name.Variable.Class */
+body .vg { color: #dd7700; font-weight: bold } /* Name.Variable.Global */
+body .vi { color: #3333BB } /* Name.Variable.Instance */
+body .vm { color: #996633 } /* Name.Variable.Magic */
+body .il { color: #0000DD; font-weight: bold } /* Literal.Number.Integer.Long */

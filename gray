@@ -454,7 +454,7 @@ class Parser
     @root = nil
     @madeupurl = 'http://embed.madeup.xyz'
     @maxmupframes = 8
-    @skin = 'bubbles'
+    @skin = 'flat'
     @styles = Hash.new
     @counters = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
     @mups = []
