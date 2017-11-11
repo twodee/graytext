@@ -929,7 +929,7 @@ EOF
           dst += "  <tr>\n    <t#{cell_letter} style=\"#{get_cell_style attributes, icolumn}\">\n"
           while @tokens[@i].type != :EOL
             while @tokens[@i].type != :SEPARATOR && @tokens[@i].type != :EOL
-              dst += content
+              dst += content false
             end
             if @tokens[@i].type == :SEPARATOR
               icolumn += 1
@@ -1285,6 +1285,8 @@ EOF
             @i += 1
           end
           code.gsub!(/'/, '\\\\\'')
+          code.gsub!(/</, '&lt;')
+          code.gsub!(/>/, '&gt;')
 
           if @target == 'wordpress'
             dst += <<EOF
