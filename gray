@@ -452,7 +452,7 @@ class Parser
     @tokens = tokens
     @target = target
     @root = nil
-    @madeupurl = 'http://embed.madeup.xyz'
+    @madeupurl = 'http://madeup.xyz'
     @maxmupframes = 8
     @skin = 'flat'
     @styles = Hash.new
@@ -1282,7 +1282,7 @@ EOF
             code += @tokens[@i].text
             @i += 1
           end
-          code.gsub!(/'/, '\\\\\'')
+          # code.gsub!(/'/, '\\\\\'')
           code.gsub!(/</, '&lt;')
           code.gsub!(/>/, '&gt;')
 
@@ -1294,6 +1294,7 @@ EOF
             @mups << attributes['id']
             dst += <<EOF
 <form style="display: none" id="mup-form-#{attributes['id']}" target="mup-frame-#{attributes['id']}" action="#{@madeupurl}" method="post">
+<input type="hidden" name="embed" value="true">
 <textarea name="src">#{code}</textarea>
 EOF
 
