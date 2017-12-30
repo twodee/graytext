@@ -470,7 +470,7 @@ class Parser
       # end
     # end
 
-    if @target == 'wordpress'
+    if @target == 'wordpress' && $config.has_key?('root')
       @root = $config['root'] + '/' + $offset
     end
   end
@@ -493,9 +493,7 @@ class Parser
 
     if @target == 'html'
       dst += IO.read(File.dirname(__FILE__) + "/skins/#{@skin}/footer.html")
-    end
 
-    if @target == 'html'
       header = IO.read(File.dirname(__FILE__) + "/skins/#{@skin}/header.html")
       # Header has \0 in it, which is special to gsub.
       header.gsub!(/(?<=<style>)(?=<\/style>)/, IO.read(File.dirname(__FILE__) + "/skins/#{@skin}/style.css").gsub(/(\\\d)/, '\\\\\1') + "\n\n/* Custom CSS */\n#{@css}")
