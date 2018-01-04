@@ -1328,7 +1328,7 @@ EOF
         elsif command == 'hide'
           is_indented = attributes.has_key?('indent') && attributes['indent'] == 'true'
           dst += "<div class=\"indented grayblock\">" if is_indented
-          dst += "<a href=\"#\" class=\"toggler\">#{attributes['title']}</a>"
+          dst += "<span class=\"toggler\">#{attributes['title']}</span>"
           classes = attributes.has_key?('class') ? ' ' + attributes['class'] : ''
           dst += "<div class=\"togglee#{classes}\">"
           if @tokens[@i].type == :SEPARATOR
