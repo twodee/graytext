@@ -1,0 +1,119 @@
+#!/usr/bin/env ruby
+
+require 'oauth2'
+# load File.expand_path(File.dirname(__FILE__)) + '/gray'
+require_relative 'graytext'
+
+CLIENT_ID = '21AS65V1AKHVYGWBy907It3OwLjv5sV8uv0ABWCb'
+CLIENT_SECRET = 'Gj6EZ3gydgGWJJLfu4KAxGI1cICNEeYlx5Zx9g5m'
+PORT = 4000
+REDIRECT_URI = "http://localhost:#{PORT}/oauth"
+
+def authorize
+  oauthor = OAuth2::Client.new(CLIENT_ID, CLIENT_SECRET, {
+    site: 'https://twodee.org',
+    authorize_url: '/blog/oauth/authorize',
+    token_url: '/blog/oauth/token',
+    redirect_uri: REDIRECT_URI
+  })
+
+  path = ENV['HOME'] + '/.otoken_gray'
+  if File.exist? path
+    accessToken = File.read path
+    accessToken = OAuth2::AccessToken.new(oauthor, accessToken)
+  else
+    puts "Visit this URL in your web browser:"
+    puts oauthor.auth_code.authorize_url(scope: 'profile')
+
+    # Start up a server to grab the authorization code that will get sent back.
+    authorizeCode = nil
+    thread = Thread.new do
+      TCPServer.open(PORT) do |server|
+        client = server.accept
+
+        # Read the browser's GET request. We assume the request is legitimate.
+        while authorizeCode.nil?
+          line = client.gets
+          if line =~ /code=([^&\s]+)/
+            authorizeCode = $1
+          end
+        end
+
+        # Send the okay back to the browser.
+        client.print "HTTP/1.1 200\r\n"
+        client.print "Content-Type: text/html\r\n"
+        client.print "\r\n"
+        client.print "You are authorized. Feel free to close this window. Or leave it open."
+        client.close
+      end
+    end
+    thread.join
+
+    # The authorization code is our ticket to an access token must accompany each
+    # API call.
+    accessToken = oauthor.auth_code.get_token(authorizeCode)
+
+    # Access tokens don't expire, so let's save this to avoid unnecessary future
+    # authorizations.
+    puts 'Saving token to .otoken for future use. Don\'t add this to your VCS.'
+    File.open(path, 'wb') do |f|
+      f.write accessToken.token
+    end
+  end
+
+  [oauthor, accessToken.token]
+end
+
+oauthor, accessToken = authorize
+
+html, config = Graytext::interpret('wordpress', ARGV[0])
+
+if config.has_key?('title')
+  response = oauthor.request(:get, '/blog/wp-json/wp/v2/categories', {
+    params: {
+      access_token: accessToken,
+      per_page: 100,
+    }
+  })
+
+  categories = JSON.parse(response.body)
+  slug2id = categories.map { |category| [category['slug'], category['id']] }.to_h
+
+  if config.has_key?('categories')
+    categories = config['categories'].split(/,/).map do |slug|
+      slug2id[slug]
+    end
+  else
+    categories = []
+  end
+
+  parameters = {
+    access_token: accessToken,
+    title: config['title'],
+    content: html,
+    status: config.has_key?('status') ? config['status'] : 'publish',
+    categories: categories
+  }
+
+  url = '/blog/wp-json/wp/v2/posts'
+  if config.has_key?('pid')
+    parameters['id'] = config['pid']
+    url += "/#{config['pid']}"
+  end
+
+  response = oauthor.request(:post, url, {
+    params: parameters
+  })
+
+  if !config.has_key?('pid')
+    publish = JSON.parse(response.body)
+    publish['link'] =~ /(\d+)$/
+    id = $1
+
+    File.open(ARGV[0], 'a') do |f|
+      f.puts "[let pid=\"#{id}\"]"
+    end
+  end
+else
+  STDERR.puts "I need a title."
+end
