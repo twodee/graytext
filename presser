@@ -92,6 +92,15 @@ def publish(gray, html, config, oauthor, accessToken)
       categories: categories
     }
 
+    if config.has_key?('release')
+      if config['release'] =~ %r{(\d+)-(\d+)-(\d+) (\d+):(\d+):(\d+)}
+        parameters['date'] = config['release']
+      else
+        STDERR.puts "Bad release time: #{config['release']}"
+        exit 1
+      end
+    end
+
     url = '/blog/wp-json/wp/v2/posts'
     if config.has_key?('pid')
       parameters['id'] = config['pid']
