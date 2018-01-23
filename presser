@@ -64,56 +64,60 @@ def authorize
   [oauthor, accessToken.token]
 end
 
-oauthor, accessToken = authorize
+def publish(gray, html, config, oauthor, accessToken)
+  if config.has_key?('title')
+    response = oauthor.request(:get, '/blog/wp-json/wp/v2/categories', {
+      params: {
+        access_token: accessToken,
+        per_page: 100,
+      }
+    })
 
-html, config = Graytext::interpret('wordpress', ARGV[0])
+    categories = JSON.parse(response.body)
+    slug2id = categories.map { |category| [category['slug'], category['id']] }.to_h
 
-if config.has_key?('title')
-  response = oauthor.request(:get, '/blog/wp-json/wp/v2/categories', {
-    params: {
+    if config.has_key?('categories')
+      categories = config['categories'].split(/,/).map do |slug|
+        slug2id[slug]
+      end
+    else
+      categories = []
+    end
+
+    parameters = {
       access_token: accessToken,
-      per_page: 100,
+      title: config['title'],
+      content: html,
+      status: config.has_key?('status') ? config['status'] : 'publish',
+      categories: categories
     }
-  })
 
-  categories = JSON.parse(response.body)
-  slug2id = categories.map { |category| [category['slug'], category['id']] }.to_h
+    url = '/blog/wp-json/wp/v2/posts'
+    if config.has_key?('pid')
+      parameters['id'] = config['pid']
+      url += "/#{config['pid']}"
+    end
 
-  if config.has_key?('categories')
-    categories = config['categories'].split(/,/).map do |slug|
-      slug2id[slug]
+    response = oauthor.request(:post, url, {
+      body: parameters
+    })
+
+    if !config.has_key?('pid')
+      publish = JSON.parse(response.body)
+      publish['link'] =~ /(\d+)$/
+      id = $1
+
+      File.open(gray, 'a') do |f|
+        f.puts "[let pid=\"#{id}\"]"
+      end
     end
   else
-    categories = []
+    STDERR.puts "I need a title."
   end
+end
 
-  parameters = {
-    access_token: accessToken,
-    title: config['title'],
-    content: html,
-    status: config.has_key?('status') ? config['status'] : 'publish',
-    categories: categories
-  }
-
-  url = '/blog/wp-json/wp/v2/posts'
-  if config.has_key?('pid')
-    parameters['id'] = config['pid']
-    url += "/#{config['pid']}"
-  end
-
-  response = oauthor.request(:post, url, {
-    params: parameters
-  })
-
-  if !config.has_key?('pid')
-    publish = JSON.parse(response.body)
-    publish['link'] =~ /(\d+)$/
-    id = $1
-
-    File.open(ARGV[0], 'a') do |f|
-      f.puts "[let pid=\"#{id}\"]"
-    end
-  end
-else
-  STDERR.puts "I need a title."
+oauthor, accessToken = authorize
+ARGV.each do |gray|
+  html, config = Graytext::interpret('wordpress', gray)
+  publish(gray, html, config, oauthor, accessToken)
 end
