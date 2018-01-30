@@ -1364,7 +1364,7 @@ EOF
 
       dir = "/var/www/twodee/#{config['root']}/#{$offset}".gsub(/\/{2,}/, '/')
 
-      command = "ssh twodee 'mkdir -p #{dir} && umask 0017 && chmod -R g+X /var/www/twodee/#{config['root']}/#{$offset.gsub(/\/.*$/, '')}' && scp #{path} twodee:#{dir} && ssh twodee 'chmod g+r #{dir}/#{File.basename(path)}'"
+      command = "ssh twodee 'umask 1067 && mkdir -p #{dir} && umask 0017 && chmod -R g+X /var/www/twodee/#{config['root']}/#{$offset.gsub(/\/.*$/, '')}' && scp #{path} twodee:#{dir} && ssh twodee 'chmod g+r #{dir}/#{File.basename(path)}'"
       puts command
       `#{command}`
 
