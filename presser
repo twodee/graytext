@@ -116,9 +116,15 @@ def publish(gray, html, config, oauthor, accessToken)
       publish['link'] =~ /(\d+)$/
       id = $1
 
-      File.open(gray, 'a') do |f|
+      newGray = gray + '.new'
+      File.open(newGray, 'w') do |f|
         f.puts "[let pid=\"#{id}\"]"
+        File.foreach(gray) do |line|
+          f.puts line
+        end
       end
+
+      File.rename(newGray, gray)
     end
   else
     STDERR.puts "I need a title."

@@ -1393,6 +1393,12 @@ EOF
           'ruby'
         when '.zsh'
           'zsh'
+        when '.html'
+          'html'
+        when '.js'
+          'js'
+        when '.css'
+          'css'
         else
           ''
         end
