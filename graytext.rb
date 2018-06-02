@@ -937,7 +937,7 @@ EOF
           s = attributes.map { |key, value| "#{key}=\"#{value}\"" }.join
           dst += "<span #{s}>"
           while @i < @tokens.length && (first_of_line? @tokens[@i].type)
-            dst += line
+            dst += line.chomp
           end
           dst += "</span>"
         elsif command == "slide"
@@ -961,6 +961,55 @@ EOF
 
         elsif command == "redacted"
           dst += '&#9608;&#9608;&#9608;&#9608;&#9608;&#9608;'
+
+        elsif command == 'shot'
+          ['app', 'src', 'ext'].each do |key|
+            if !attributes.has_key? key
+              raise "Shot must have #{key} attribute!"
+            end
+          end
+
+          inpath = attributes['src']
+          basepath = File.basename(inpath)
+          ext = attributes['ext']
+          outpath = "shots/#{basepath}.#{ext}"
+          FileUtils.mkdir_p('shots')
+
+          if !File.exists?(outpath) || File.mtime(outpath) < File.mtime(inpath)
+            if attributes['app'] == 'puredata'
+              `open -a Pd-0.48-0.app #{inpath}`
+              STDERR.puts "screencapture -l $(GetWindowID Pd '#{inpath}') '#{outpath}'"
+              `screencapture -l $(GetWindowID Pd '#{basepath}') '#{outpath}'`
+              sleep 2
+            else
+              raise "I don\'t know #{attributes['app']}."
+            end
+          end
+
+          if attributes.has_key?('caption')
+            style = attributes.has_key?('style') ? " style=\"#{attributes['style']}\"" : ''
+            dst += "<figure#{style}>"
+          end
+
+          s = attributes.map { |key, value| (['src', 'selflink', 'ext', 'app'].include?(key) || (attributes.has_key?('caption') && key == 'style')) ? '' : " #{key}=\"#{value}\"" }.join
+          if attributes.has_key?('caption')
+            s += ' width="100%"'
+          end
+
+          is_selflink = attributes.has_key?('selflink') && attributes['selflink'] == 'true'
+          if is_selflink
+            dst += "<a href=\"#{dst}\">"
+          end
+
+          dst += "<img src=\"#{outpath}\"#{s}>"
+
+          if is_selflink
+            dst += "</a>"
+          end
+
+          if attributes.has_key? 'caption'
+            dst += "<figcaption>#{attributes['caption']}</figcaption></figure>"
+          end
 
         elsif command == "image"
           path = attributes['src']
@@ -1157,7 +1206,7 @@ EOF
               end
             end
 
-            dst += "<img src=\"#{@root}/#{attributes['id']}.png\"#{s} style=\"#{@styles['latex_math']}\">"
+            dst += "<img src=\"#{attributes['id']}.png\"#{s} style=\"#{@styles['latex_math']}\">"
 
           elsif command == 'listveil'
             if attributes.has_key?('class') 
@@ -1399,9 +1448,14 @@ EOF
           'js'
         when '.css'
           'css'
+        when '.hs'
+          'haskell'
         else
           ''
         end
+      if File.basename(codepath).downcase == 'makefile'
+        language = 'make'
+      end
       language = " lang=#{language}" if !language.empty?
       code += "[code#{language}\n"
       src = IO.read(codepath).gsub(/\t/, '  ').chomp
