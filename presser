@@ -11,7 +11,7 @@ REDIRECT_URI = "http://localhost:#{PORT}/oauth"
 
 def authorize
   oauthor = OAuth2::Client.new(CLIENT_ID, CLIENT_SECRET, {
-    site: 'https://twodee.org',
+    site: 'https://twodee.org/',
     authorize_url: '/blog/oauth/authorize',
     token_url: '/blog/oauth/token',
     redirect_uri: REDIRECT_URI

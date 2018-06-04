@@ -986,6 +986,8 @@ EOF
             end
           end
 
+          outpath = "#{@root}/#{outpath}"
+
           if attributes.has_key?('caption')
             style = attributes.has_key?('style') ? " style=\"#{attributes['style']}\"" : ''
             dst += "<figure#{style}>"
@@ -998,7 +1000,7 @@ EOF
 
           is_selflink = attributes.has_key?('selflink') && attributes['selflink'] == 'true'
           if is_selflink
-            dst += "<a href=\"#{dst}\">"
+            dst += "<a href=\"#{outpath}\" target=_blank>"
           end
 
           dst += "<img src=\"#{outpath}\"#{s}>"
