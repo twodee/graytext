@@ -581,7 +581,7 @@ EOF
     end
 
     def first_of_line? type
-      ([:COUNTED_HASHES, :HASHES, :LINE, :INDENT, :BULLET, :INT, :EOL].member? type) || first_of_content?(type)
+      ([:COUNTED_HASHES, :HASHES, :LINE, :INDENT, :BULLET, :INT, :EOL, :CHECKBOX].member? type) || first_of_content?(type)
     end
 
     def parse_attributes
@@ -717,7 +717,7 @@ EOF
             @i += 1
           else
             puts dst
-            raise "expected ], found #{@tokens[@i].inspect}"
+            raise "expected ], found #{@tokens[@i].inspect} AND THEN #{@tokens[@i + 1].inspect}"
           end
         end
 
@@ -1327,12 +1327,17 @@ EOF
               @i += 1
               dst += handle_command
             else
-              dst += content
-              if @tokens[@i].type == :EOL
-                @i += 1
-              else
-                raise "expected EOL after hide content, found #{@tokens[@i].type}"
+
+              while @i < @tokens.length && (first_of_line? @tokens[@i].type)
+                dst += line
               end
+
+              # dst += content
+              # if @tokens[@i].type == :RIGHT_BRACKET
+                # @i += 1
+              # else
+                # raise "expected ] after hide content, found #{@tokens[@i].type}"
+              # end
             end
             dst += '</div>'
             dst += '</div>' if is_indented

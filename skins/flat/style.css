@@ -42,7 +42,7 @@ body {
   /* margin-right: 20px; */
   margin-left: auto;
   margin-right: auto;
-  width: 960px;
+  width: 720px;
 
   /* I can't have this here if I want floats to wrap? */
   /* width: 960px; */
@@ -152,6 +152,14 @@ h6 {
   width: 215px;
 }
 
+.left4 {
+  width: 680px;
+  clear: both;
+  margin: 0;
+  margin-left: 20px;
+  margin-right: 20px;
+}
+
 .all4 {
   width: 920px;
   clear: both;
@@ -171,6 +179,14 @@ h6 {
 
   body {
     width: 100%;
+  }
+
+  .left4 {
+    width: 100%;
+    padding-left: 20px;
+    padding-right: 20px;
+    margin-left: auto;
+    margin-right: auto;
   }
 
   .left2, .right2, .left3, .right1 {
