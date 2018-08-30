@@ -16,10 +16,10 @@ if port_open? 4567
 
     require 'sinatra'
  
-    # $stderr.reopen(File.new('/dev/null', 'w'))
-    # $stdout.reopen(File.new('/dev/null', 'w'))
-    $stderr.reopen(File.new('/Users/johnch/Desktop/err', 'w'))
-    $stdout.reopen(File.new('/Users/johnch/Desktop/out', 'w'))
+    $stderr.reopen(File.new('/dev/null', 'w'))
+    $stdout.reopen(File.new('/dev/null', 'w'))
+    # $stderr.reopen(File.new("#{$HOME}/Users/johnch/Desktop/err", 'w'))
+    # $stdout.reopen(File.new("#{$HOME}/Users/johnch/Desktop/out", 'w'))
     $path = nil
 
     get %r{/(.+)} do |file|
