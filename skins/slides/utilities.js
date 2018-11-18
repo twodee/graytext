@@ -33,6 +33,9 @@ $(document).ready(function() {
   $('a.lineveil').click(lineveil);
   $('.listveil * li').wrapInner('<span class="listveil"></span>');
   $('span.listveil').hide().before('<a href="#" onclick="listveilShow(this); return false;">...</a>');
+
+  $('#left-navigation').click(previous);
+  $('#right-navigation').click(next);
 });
 
 function shuffle(list) {
@@ -142,41 +145,48 @@ $(document).ready(function() {
   currentSlide.addClass('gray-slide-in-lr');
 });
 
+function previous() {
+  dir = 'left';
+  var prevs = currentSlide.prevAll('.gray-slide');
+  if (prevs.length > 0) {
+    currentSlide.removeClass('gray-slide-in-lr gray-slide-in-rl');
+    currentSlide.addClass('gray-slide-out-rl');
+    currentSlide = prevs.first();
+    if (prevs.size() > 1) {
+      onDeckSlide = prevs[1];
+    } else {
+      onDeckSlide = null;
+    }
+    currentSlide.removeClass('gray-slide-out-lr gray-slide-out-rl');
+    currentSlide.addClass('gray-slide-in-rl');
+  }
+}
+
+function next() {
+  dir = 'right';
+  var nexts = currentSlide.nextAll('.gray-slide');
+  if (nexts.length > 0) {
+    currentSlide.removeClass('gray-slide-in-lr gray-slide-in-rl');
+    currentSlide.addClass('gray-slide-out-lr');
+    currentSlide = nexts.first();
+    if (nexts.size() > 1) {
+      onDeckSlide = nexts[1];
+    } else {
+      onDeckSlide = null;
+    }
+    currentSlide.removeClass('gray-slide-out-lr gray-slide-out-rl');
+    currentSlide.addClass('gray-slide-in-lr');
+  }
+}
+
 var dir = null;
 $(document).keydown(function(e) {
   switch (e.which) {
     case 37:
-      console.log("saw key");
-      dir = 'left';
-      var prevs = currentSlide.prevAll('.gray-slide');
-      if (prevs.length > 0) {
-        currentSlide.removeClass('gray-slide-in-lr gray-slide-in-rl');
-        currentSlide.addClass('gray-slide-out-rl');
-        currentSlide = prevs.first();
-        if (prevs.size() > 1) {
-          onDeckSlide = prevs[1];
-        } else {
-          onDeckSlide = null;
-        }
-        currentSlide.removeClass('gray-slide-out-lr gray-slide-out-rl');
-        currentSlide.addClass('gray-slide-in-rl');
-      }
+      previous();
       break;
     case 39:
-      dir = 'right';
-      var nexts = currentSlide.nextAll('.gray-slide');
-      if (nexts.length > 0) {
-        currentSlide.removeClass('gray-slide-in-lr gray-slide-in-rl');
-        currentSlide.addClass('gray-slide-out-lr');
-        currentSlide = nexts.first();
-        if (nexts.size() > 1) {
-          onDeckSlide = nexts[1];
-        } else {
-          onDeckSlide = null;
-        }
-        currentSlide.removeClass('gray-slide-out-lr gray-slide-out-rl');
-        currentSlide.addClass('gray-slide-in-lr');
-      }
+      next();
       break;
   }
 });

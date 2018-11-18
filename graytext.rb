@@ -386,6 +386,7 @@ module Graytext
   class Parser
     def initialize tokens, target, config
       @tokens = tokens
+      @ordinals = {}
       @target = target
       @config = config
       @root = nil
@@ -396,16 +397,6 @@ module Graytext
       @counters = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
       @mups = []
       @css = ''
-
-      # @tokens.each do |token|
-        # if token.type == :COMMENT
-          # if token.text =~ /\broot\s*=\s*(\S+)/
-            # @root = $1
-          # elsif token.text =~ /\broot\s*=\s*(\S+)/
-            # @root = $1
-          # end
-        # end
-      # end
 
       if @target == 'wordpress' && @config.has_key?('root')
         @root = @config['root'] + '/' + $offset
@@ -634,7 +625,7 @@ EOF
 
     def is_image
       @tokens[@i].type == :LEFT_BRACKET && @tokens[@i + 1].type == :IDENTIFIER &&
-      (@tokens[@i + 1].text == 'image')
+      (@tokens[@i + 1].text == 'image' || @tokens[@i + 1].text == 'figure')
     end
 
     def is_block
@@ -760,6 +751,16 @@ EOF
           blacklist = %w{to title}
           attributes_string = attributes.reject { |key, _| blacklist.include? key }.map { |key, value| " #{key}=\"#{value}\"" }.join
           dst += "<a href=\"#{attributes['to']}\"#{attributes_string}>#{attributes['title']}</a>"
+
+        elsif command == 'counter'
+          if attributes.has_key?('type')
+            type = attributes['type']
+            if !@ordinals.has_key?(type)
+              @ordinals[type] = 0
+            end
+            @ordinals[type] += 1
+            dst += @ordinals[type].to_s
+          end
           
         # Style definitions
         elsif command == 'style'
@@ -1012,6 +1013,39 @@ EOF
           if attributes.has_key? 'caption'
             dst += "<figcaption>#{attributes['caption']}</figcaption></figure>"
           end
+
+        elsif command == "figure"
+          path = attributes['src']
+          if path !~ /^https?:\/\//
+            path = "#{@root}/#{path}"
+          end
+
+          s = attributes.map { |key, value| (key == 'src' || key == 'selflink') ? '' : " #{key}=\"#{value}\"" }.join
+
+          dst += "<figure#{s} style=\"text-align: center\">"
+
+          is_selflink = attributes.has_key?('selflink') && attributes['selflink'] == 'true'
+          if is_selflink
+            dst += "<a href=\"#{path}\">"
+          end
+
+          dst += "<img src=\"#{path}\" width=\"100%\">"
+
+          if is_selflink
+            dst += "</a>"
+          end
+
+          dst += "<figcaption>"
+          while @i < @tokens.length && (first_of_content?(@tokens[@i].type) || @tokens[@i].type == :EOL)
+            dst += content
+            dst += "\n" if @i + 1 < @tokens.length && @tokens[@i + 1].type != :RIGHT_BRACKET
+            if @tokens[@i].type == :EOL
+              @i += 1
+            else
+              raise "expected EOL after figure caption content, found #{@tokens[@i].type}"
+            end
+          end
+          dst += "</figcaption></figure>"
 
         elsif command == "image"
           path = attributes['src']

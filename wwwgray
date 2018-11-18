@@ -10,16 +10,17 @@ is_parent = true
 $log = open("#{ENV['HOME']}/.junk/gray.log", 'a')
 
 if port_open? 4567
+  puts "hi"
   pid = Process.fork
   if pid.nil?
     is_parent = false
 
     require 'sinatra'
  
-    $stderr.reopen(File.new('/dev/null', 'w'))
-    $stdout.reopen(File.new('/dev/null', 'w'))
-    # $stderr.reopen(File.new("#{$HOME}/Users/johnch/Desktop/err", 'w'))
-    # $stdout.reopen(File.new("#{$HOME}/Users/johnch/Desktop/out", 'w'))
+    # $stderr.reopen(File.new('/dev/null', 'w'))
+    # $stdout.reopen(File.new('/dev/null', 'w'))
+    $stderr.reopen(File.new("#{ENV['HOME']}/err", 'w'))
+    $stdout.reopen(File.new("#{ENV['HOME']}/out", 'w'))
     $path = nil
 
     get %r{/(.+)} do |file|
@@ -48,12 +49,14 @@ if port_open? 4567
     end
     Process.detach(pid)
   end
+else
+  puts 'foo'
 end
 
 if is_parent && ARGV.size > 0
   path = ARGV[0]
   $log.puts "CLIENT: requesting #{path}"
   $log.flush
-  http = Net::HTTP.new('0.0.0.0', 4567)
+  http = Net::HTTP.new('localhost', 4567)
   response = http.send_request('PUT', File.absolute_path(path), '')
 end
