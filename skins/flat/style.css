@@ -363,6 +363,34 @@ img.size-full {
   margin-right: auto;
 }
 
+.gray-center-10 {
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+  width: 10%;
+}
+
+.gray-center-20 {
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+  width: 20%;
+}
+
+.gray-center-30 {
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+  width: 30%;
+}
+
+.gray-center-25 {
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+  width: 25%;
+}
+
 .gray-center-50 {
   display: block;
   margin-left: auto;
@@ -522,10 +550,13 @@ ul.gray-todo li {
 }
 
 blockquote {
-  border-left: 6px solid #D9D9D9;
-  margin-left: 0;
-  padding-left: 20px;
-  font-family: 'Roboto Condensed';
+  border-left: 2px solid rgb(150, 200, 240);
+  margin-left: -14px;
+  padding-left: 12px;
+  font-style: italic;
+  line-height: 1.4;
+  font-size: 95%;
+  margin-left: 20px;
 }
 
 td.linenos { background-color: #f0f0f0; padding-right: 10px; }

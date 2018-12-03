@@ -1014,38 +1014,34 @@ EOF
             dst += "<figcaption>#{attributes['caption']}</figcaption></figure>"
           end
 
-        elsif command == "figure"
-          path = attributes['src']
-          if path !~ /^https?:\/\//
-            path = "#{@root}/#{path}"
-          end
-
-          s = attributes.map { |key, value| (key == 'src' || key == 'selflink') ? '' : " #{key}=\"#{value}\"" }.join
-
-          dst += "<figure#{s} style=\"text-align: center\">"
-
-          is_selflink = attributes.has_key?('selflink') && attributes['selflink'] == 'true'
-          if is_selflink
-            dst += "<a href=\"#{path}\">"
-          end
-
-          dst += "<img src=\"#{path}\" width=\"100%\">"
-
-          if is_selflink
-            dst += "</a>"
-          end
-
-          dst += "<figcaption>"
+        elsif command == "caption"
+          alignment = attributes.has_key?('align') ? attributes['align'] : 'center'
+          dst += %Q{<figcaption style="text-align: #{alignment};">}
           while @i < @tokens.length && (first_of_content?(@tokens[@i].type) || @tokens[@i].type == :EOL)
             dst += content
             dst += "\n" if @i + 1 < @tokens.length && @tokens[@i + 1].type != :RIGHT_BRACKET
             if @tokens[@i].type == :EOL
               @i += 1
             else
-              raise "expected EOL after figure caption content, found #{@tokens[@i].type}"
+              raise "expected EOL after caption content, found #{@tokens[@i].type}"
             end
           end
-          dst += "</figcaption></figure>"
+          dst += "</figcaption>"
+
+        elsif command == "figure"
+          s = attributes.map { |key, value| (key == 'src' || key == 'selflink') ? '' : " #{key}=\"#{value}\"" }.join
+
+          dst += "<figure#{s} style=\"text-align: center\">"
+          while @i < @tokens.length && (first_of_content?(@tokens[@i].type) || @tokens[@i].type == :EOL)
+            dst += content
+            dst += "\n" if @i + 1 < @tokens.length && @tokens[@i + 1].type != :RIGHT_BRACKET
+            if @tokens[@i].type == :EOL
+              @i += 1
+            else
+              raise "expected EOL after figure content, found #{@tokens[@i].type}"
+            end
+          end
+          dst += "</figure>"
 
         elsif command == "image"
           path = attributes['src']
