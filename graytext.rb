@@ -978,6 +978,7 @@ EOF
 
           if !File.exists?(outpath) || File.mtime(outpath) < File.mtime(inpath)
             if attributes['app'] == 'puredata'
+              # https://github.com/smokris/GetWindowID
               `open -a Pd-0.48-0.app #{inpath}`
               STDERR.puts "screencapture -l $(GetWindowID Pd '#{inpath}') '#{outpath}'"
               `screencapture -l $(GetWindowID Pd '#{basepath}') '#{outpath}'`
