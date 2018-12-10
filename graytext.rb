@@ -390,7 +390,7 @@ module Graytext
       @target = target
       @config = config
       @root = nil
-      @madeupurl = 'http://madeup.xyz'
+      @madeupurl = 'https://madeup.xyz'
       @maxmupframes = 8
       @skin = 'flat'
       @styles = Hash.new
@@ -1305,7 +1305,6 @@ EOF
               code += @tokens[@i].text
               @i += 1
             end
-            # code.gsub!(/'/, '\\\\\'')
             code.gsub!(/</, '&lt;')
             code.gsub!(/>/, '&gt;')
 
@@ -1321,7 +1320,9 @@ EOF
 <textarea name="src">#{code}</textarea>
 EOF
 
-              dst += %Q{<input type="hidden" name="runonload" value="#{attributes.has_key?('run') ? attributes['run'] : 'true'}">}
+              if attributes.has_key?('runZeroMode')
+                dst += %Q{<input type="hidden" name="runZeroMode" value="#{attributes['runZeroMode']}">}
+              end
 
               if @skin == 'slides'
                 dst += <<EOF
