@@ -1309,8 +1309,13 @@ EOF
             code.gsub!(/>/, '&gt;')
 
             if @target == 'wordpress'
+              if attributes.has_key?('runZeroMode')
+                runZeroMode = " runZeroMode=#{attributes['runZeroMode']}"
+              else
+                runZeroMode = ''
+              end
               dst += <<EOF
-<pre>[mup id=#{attributes['id']} width=#{attributes['width']} height=#{attributes['height']}]#{code}[/mup]</pre>
+<pre>[mup id=#{attributes['id']} width=#{attributes['width']} height=#{attributes['height']}#{runZeroMode}]#{code}[/mup]</pre>
 EOF
             else
               @mups << attributes['id']
