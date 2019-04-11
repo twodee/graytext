@@ -152,7 +152,7 @@ module Graytext
       end
 
       if @src[@i] == "\n"
-        if @id == 'code' || @id == 'lineveil' || @id == 'madeup' || @id == 'css' || @id == 'mup' || @id == 'latex' || @id == 'texmath' # Any code blocks
+        if @id == 'code' || @id == 'lineveil' || @id == 'madeup' || @id == 'twoville' || @id == 'css' || @id == 'mup' || @id == 'latex' || @id == 'texmath' || @id == 'mathblock' || @id == 'mathspan' # Any code blocks
           @states[-1] = :blockcode
         elsif @id == 'block' || @id == 'listveil' || @id == 'slide'
           @states[-1] = :linestart
@@ -330,6 +330,9 @@ module Graytext
       if @i + 1 < @src.length && @src[@i] == '-' && @src[@i + 1] == '-'
         @i += 2
         Token.new :EMDASH, '---'
+      elsif @i + 1 < @src.length && @src[@i] == '?' && @src[@i + 1] == '*'
+        @i += 2
+        Token.new :OVERSTAR, '-?*'
       else
         get_token_content
       end
@@ -339,6 +342,9 @@ module Graytext
       if @i < @src.length && @src[@i] == '*'
         @i += 1
         Token.new :STARSTAR, @token_so_far
+      elsif @i + 1 < @src.length && @src[@i] == '?' && @src[@i + 1] == '-'
+        @i += 2
+        Token.new :STAROVER, '*?-'
       else
         Token.new :STAR, @token_so_far
       end
@@ -386,16 +392,22 @@ module Graytext
   class Parser
     def initialize tokens, target, config
       @tokens = tokens
+      # tokens.each do |token|
+        # STDERR.puts token.inspect
+      # end
       @ordinals = {}
       @target = target
       @config = config
       @root = nil
       @madeupurl = 'https://madeup.xyz'
+      @twovilleurl = 'https://twodee.org/twoville/index.php'
       @maxmupframes = 8
+      @maxtwovilleframes = 8
       @skin = 'flat'
       @styles = Hash.new
       @counters = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
       @mups = []
+      @twovilles = []
       @css = ''
 
       if @target == 'wordpress' && @config.has_key?('root')
@@ -413,6 +425,7 @@ module Graytext
       @is_in_backtick = false
       @is_in_asterisk = false
       @is_in_starstar = false
+      @is_in_starover = false
 
       @i = 0
       until @tokens[@i].type == :EOF
@@ -441,6 +454,24 @@ EOF
           dst += <<EOF
   mups.forEach(function(mup) {
     document.getElementById('mup-form-' + mup).submit();
+  });
+EOF
+        end
+
+        dst += '</script>'
+      end
+
+      if !@twovilles.empty?
+        dst += <<EOF
+  <script>
+  var maxTwovilleFrames = #{@maxtwovilleframes};
+  var twovilles = [#{@twovilles.map { |mup| "'#{mup}'" }.join(', ')}];
+EOF
+
+        if @skin != 'slides'
+          dst += <<EOF
+  twovilles.forEach(function(mup) {
+    document.getElementById('twoville-form-' + mup).submit();
   });
 EOF
         end
@@ -568,7 +599,7 @@ EOF
     end
 
     def first_of_content? type
-      ([:CONTENT, :LEFT_BRACKET, :COMMENT].member? type) || (type == :BACKTICK && !@is_in_backtick) || (type == :STAR && !@is_in_asterisk) || (type == :STARSTAR && !@is_in_starstar) || (type == :EMDASH)
+      ([:CONTENT, :LEFT_BRACKET, :COMMENT].member? type) || (type == :BACKTICK && !@is_in_backtick) || (type == :STAR && !@is_in_asterisk) || (type == :STARSTAR && !@is_in_starstar) || (type == :STAROVER && !@is_in_starover)|| (type == :EMDASH)
     end
 
     def first_of_line? type
@@ -687,6 +718,18 @@ EOF
         elsif @tokens[@i].type == :EMDASH
           @i += 1
           dst += '&mdash;'
+        elsif @tokens[@i].type == :STAROVER
+          @i += 1
+          dst += '<span style="text-decoration: overline">'
+          @is_in_starover = true
+          dst += content
+          if @tokens[@i].type == :OVERSTAR
+            @i += 1
+          else
+            raise "expected overstar, found #{@tokens[@i].inspect}"
+          end
+          @is_in_starover = false
+          dst += '</span>'
         elsif @tokens[@i].type == :STARSTAR
           @i += 1
           dst += '<b>'
@@ -826,8 +869,16 @@ EOF
             @madeupurl = attributes['madeupurl']
           end
 
+          if attributes.has_key? 'twovilleurl'
+            @twovilleurl = attributes['twovilleurl']
+          end
+
           if attributes.has_key? 'maxmupframes'
             @maxmupframes = attributes['maxmupframes']
+          end
+
+          if attributes.has_key? 'maxtwovilleframes'
+            @maxtwovilleframes = attributes['maxtwovilleframes']
           end
 
           attributes.each do |key, value|
@@ -1189,7 +1240,7 @@ click for a random term...
 EOF
             end
 
-          elsif command == 'texmath'
+          elsif command == 'texmath' || command == 'mathblock'
             dst += '<div class="mathjax">$$'
             while @i < @tokens.length && @tokens[@i].type == :CODE
               dst += @tokens[@i].text
@@ -1198,10 +1249,24 @@ EOF
               if @tokens[@i].type == :EOL
                 @i += 1
               else
-                raise "expected EOL after texmath, found #{@tokens[@i].type}"
+                raise "expected EOL after mathblock, found #{@tokens[@i].type}"
               end
             end
             dst += '$$</div>'
+
+          elsif command == 'mathspan'
+            dst += '<span class="mathjax">$'
+            while @i < @tokens.length && @tokens[@i].type == :CODE
+              dst += @tokens[@i].text
+              @i += 1
+
+              if @tokens[@i].type == :EOL
+                @i += 1
+              else
+                raise "expected EOL after mathspan, found #{@tokens[@i].type}"
+              end
+            end
+            dst += '$</span>'
 
           elsif command == 'latex'
             ['id'].each do |key|
@@ -1292,6 +1357,48 @@ EOF
   <div class="block-editor"><div class="s-expression">#{tree}</div></div>
 </div>
 EOF
+
+          elsif command == 'twoville'
+            ['id', 'width', 'height'].each do |key|
+              if !attributes.has_key? key
+                raise "twoville snippet must have #{key} attribute!"
+              end
+            end
+
+            code = ''
+            while @i < @tokens.length && (@tokens[@i].type != :RIGHT_BRACKET)
+              code += @tokens[@i].text
+              @i += 1
+            end
+            code.gsub!(/</, '&lt;')
+            code.gsub!(/>/, '&gt;')
+
+            if @target == 'wordpress'
+              if attributes.has_key?('runZeroMode')
+                runZeroMode = " isAutorun0=#{attributes['isAutorun0']}"
+              else
+                runZeroMode = ''
+              end
+              dst += <<EOF
+<pre>[twoville id=#{attributes['id']} width=#{attributes['width']} height=#{attributes['height']}#{runZeroMode}]#{code}[/twoville]</pre>
+EOF
+            else
+              @twovilles << attributes['id']
+              dst += <<EOF
+<form style="display: none" id="twoville-form-#{attributes['id']}" target="twoville-frame-#{attributes['id']}" action="#{@twovilleurl}" method="post">
+<textarea name="src">#{code}</textarea>
+EOF
+
+              if attributes.has_key?('isAutorun0')
+                dst += %Q{<input type="hidden" name="isAutorun0" value="#{attributes['isAutorun0']}">}
+              end
+
+              dst += <<EOF
+<input type="submit"/>
+</form>
+<iframe id="twoville-frame-#{attributes['id']}" name="twoville-frame-#{attributes['id']}" src="" width="#{attributes['width']}" height="#{attributes['height']}" class="twoville-frame#{attributes.has_key?('class') ? " #{attributes['class']}" : ''}"></iframe>
+EOF
+            end
 
           elsif command == 'madeup'
             ['id', 'width', 'height'].each do |key|
