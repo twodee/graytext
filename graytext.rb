@@ -1375,7 +1375,7 @@ EOF
 
             if @target == 'wordpress'
               if attributes.has_key?('runZeroMode')
-                runZeroMode = " isAutorun0=#{attributes['isAutorun0']}"
+                runZeroMode = " runZeroMode=#{attributes['runZeroMode']}"
               else
                 runZeroMode = ''
               end
@@ -1389,8 +1389,8 @@ EOF
 <textarea name="src">#{code}</textarea>
 EOF
 
-              if attributes.has_key?('isAutorun0')
-                dst += %Q{<input type="hidden" name="isAutorun0" value="#{attributes['isAutorun0']}">}
+              if attributes.has_key?('runZeroMode')
+                dst += %Q{<input type="hidden" name="runZeroMode" value="#{attributes['runZeroMode']}">}
               end
 
               dst += <<EOF
