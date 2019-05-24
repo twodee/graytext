@@ -152,7 +152,7 @@ module Graytext
       end
 
       if @src[@i] == "\n"
-        if @id == 'code' || @id == 'lineveil' || @id == 'madeup' || @id == 'twoville' || @id == 'css' || @id == 'mup' || @id == 'latex' || @id == 'texmath' || @id == 'mathblock' || @id == 'mathspan' # Any code blocks
+        if @id == 'code' || @id == 'lineveil' || @id == 'madeup' || @id == 'twoville' || @id == 'deltaphone' || @id == 'css' || @id == 'mup' || @id == 'latex' || @id == 'texmath' || @id == 'mathblock' || @id == 'mathspan' # Any code blocks
           @states[-1] = :blockcode
         elsif @id == 'block' || @id == 'listveil' || @id == 'slide'
           @states[-1] = :linestart
@@ -401,13 +401,14 @@ module Graytext
       @root = nil
       @madeupurl = 'https://madeup.xyz'
       @twovilleurl = 'https://twodee.org/twoville/index.php'
+      @deltaphoneurl = 'https://twodee.org/deltaphone/index.php'
       @maxmupframes = 8
-      @maxtwovilleframes = 8
       @skin = 'flat'
       @styles = Hash.new
       @counters = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
       @mups = []
       @twovilles = []
+      @deltaphones = []
       @css = ''
 
       if @target == 'wordpress' && @config.has_key?('root')
@@ -463,20 +464,28 @@ EOF
 
       if !@twovilles.empty?
         dst += <<EOF
-  <script>
-  var maxTwovilleFrames = #{@maxtwovilleframes};
-  var twovilles = [#{@twovilles.map { |mup| "'#{mup}'" }.join(', ')}];
-EOF
+<script>
 
-        if @skin != 'slides'
-          dst += <<EOF
-  twovilles.forEach(function(mup) {
-    document.getElementById('twoville-form-' + mup).submit();
-  });
-EOF
-        end
+var twovilles = [#{@twovilles.map { |mup| "'#{mup}'" }.join(', ')}];
+twovilles.forEach(function(mup) {
+  document.getElementById('twoville-form-' + mup).submit();
+});
 
-        dst += '</script>'
+</script>
+EOF
+      end
+
+      if !@deltaphones.empty?
+        dst += <<EOF
+<script>
+
+var deltaphones = [#{@deltaphones.map { |id| "'#{id}'" }.join(', ')}];
+deltaphones.forEach(function(id) {
+  document.getElementById('deltaphone-form-' + id).submit();
+});
+
+</script>
+EOF
       end
 
       dst
@@ -793,7 +802,7 @@ EOF
         if command == "link"
           blacklist = %w{to title}
           attributes_string = attributes.reject { |key, _| blacklist.include? key }.map { |key, value| " #{key}=\"#{value}\"" }.join
-          dst += "<a href=\"#{attributes['to']}\"#{attributes_string}>#{attributes['title']}</a>"
+          dst += "<a href=\"#{attributes['to'].gsub(/%PWD%/, @target == 'wordpress' ? (@root || '') : '.')}\"#{attributes_string}>#{attributes['title']}</a>"
 
         elsif command == 'counter'
           if attributes.has_key?('type')
@@ -871,6 +880,10 @@ EOF
 
           if attributes.has_key? 'twovilleurl'
             @twovilleurl = attributes['twovilleurl']
+          end
+
+          if attributes.has_key? 'deltaphoneurl'
+            @deltaphoneurl = attributes['deltaphoneurl']
           end
 
           if attributes.has_key? 'maxmupframes'
@@ -1030,7 +1043,7 @@ EOF
           if !File.exists?(outpath) || File.mtime(outpath) < File.mtime(inpath)
             if attributes['app'] == 'puredata'
               # https://github.com/smokris/GetWindowID
-              `open -a Pd-0.48-0.app #{inpath}`
+              `open -a Pd-0.49-1.app #{inpath}`
               STDERR.puts "screencapture -l $(GetWindowID Pd '#{inpath}') '#{outpath}'"
               `screencapture -l $(GetWindowID Pd '#{basepath}') '#{outpath}'`
               sleep 2
@@ -1098,6 +1111,7 @@ EOF
         elsif command == "image"
           path = attributes['src']
           if path !~ /^https?:\/\//
+            # TODO isn't root sometimes nil?
             path = "#{@root}/#{path}"
           end
 
@@ -1219,6 +1233,23 @@ EOF
               dst += '</div>'
               dst += '</div>'
             end
+
+          elsif command == 'console'
+            code = ''
+
+            while @i < @tokens.length && (first_of_content? @tokens[@i].type)
+              code += content false
+              code += "\n"
+              if @tokens[@i].type == :EOL
+                @i += 1
+              else
+                raise "expected EOL after console content, found #{@tokens[@i].type}"
+              end
+            end
+
+            dst += "<pre#{pair_string}>"
+            dst += code
+            dst += '</pre>'
 
           elsif command == 'raffle'
             choices = []
@@ -1357,6 +1388,39 @@ EOF
   <div class="block-editor"><div class="s-expression">#{tree}</div></div>
 </div>
 EOF
+
+          elsif command == 'deltaphone'
+            ['id', 'width', 'height'].each do |key|
+              if !attributes.has_key? key
+                raise "deltaphone snippet must have #{key} attribute!"
+              end
+            end
+
+            code = ''
+            while @i < @tokens.length && (@tokens[@i].type != :RIGHT_BRACKET)
+              code += @tokens[@i].text
+              @i += 1
+            end
+
+            if @target == 'wordpress'
+              dst += <<EOF
+[deltaphone id=#{attributes['id']} width=#{attributes['width']} height=#{attributes['height']}]#{code}[/deltaphone]</pre>
+EOF
+            else
+              code.gsub!(/</, '&lt;')
+              code.gsub!(/>/, '&gt;')
+              @deltaphones << attributes['id']
+              dst += <<EOF
+<form style="display: none" id="deltaphone-form-#{attributes['id']}" target="deltaphone-frame-#{attributes['id']}" action="#{@deltaphoneurl}" method="post">
+<textarea name="src">#{code}</textarea>
+EOF
+
+              dst += <<EOF
+<input type="submit"/>
+</form>
+<iframe id="deltaphone-frame-#{attributes['id']}" name="deltaphone-frame-#{attributes['id']}" src="" width="#{attributes['width']}" height="#{attributes['height']}" class="deltaphone-frame#{attributes.has_key?('class') ? " #{attributes['class']}" : ''}"></iframe>
+EOF
+            end
 
           elsif command == 'twoville'
             ['id', 'width', 'height'].each do |key|

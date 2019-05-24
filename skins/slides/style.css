@@ -400,6 +400,14 @@ p {
   border: none;
 }
 
+.twoville-frame {
+  border: none;
+}
+
+.deltaphone-frame {
+  border: none;
+}
+
 .gray-slide {
   position: absolute;
   font-size: 36pt;

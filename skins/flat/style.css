@@ -529,6 +529,10 @@ p {
   border: solid 1px #CCCCCC;
 }
 
+.deltaphoneframe {
+  border: solid 1px #CCCCCC;
+}
+
 ul.gray-todo {
   list-style-type: none;
 }
