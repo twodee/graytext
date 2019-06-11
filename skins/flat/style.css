@@ -111,6 +111,11 @@ h6 {
   color: rgb(75%, 55%, 55%);
 }
 
+.expandable-link {
+  display: block;
+  margin-left: auto;
+}
+
 .bubble {
   width: 100%;
   display: block;
