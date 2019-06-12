@@ -483,14 +483,6 @@ var deltaphones = [#{@deltaphones.map { |id| "'#{id}'" }.join(', ')}];
 deltaphones.forEach(function(id) {
   document.getElementById('deltaphone-form-' + id).submit();
 });
-
-$('.expandable-link').each(function(i, element) {
-  var formId = element.dataset.form;
-  element.onclick = function() {
-    document.getElementById(formId).submit();
-  };
-});
-
 </script>
 EOF
       end
@@ -1422,7 +1414,6 @@ EOF
               dst += <<EOF
 <form style="display: none" id="deltaphone-form-#{attributes['id']}" target="deltaphone-frame-#{attributes['id']}" action="#{@deltaphoneurl}" method="post">
   <textarea name="src">#{code}</textarea>
-  <input type="submit"/>
 </form>
 <iframe id="deltaphone-frame-#{attributes['id']}" name="deltaphone-frame-#{attributes['id']}" src="" width="#{attributes['width']}" height="#{attributes['height']}" class="deltaphone-frame#{attributes.has_key?('class') ? " #{attributes['class']}" : ''}"></iframe>
 EOF
@@ -1451,6 +1442,8 @@ EOF
             code.gsub!(/</, '&lt;')
             code.gsub!(/>/, '&gt;')
 
+            is_expandable = !attributes.has_key?('expandable') || attributes['expandable'] != 'false'
+
             if @target == 'wordpress'
               if attributes.has_key?('runZeroMode')
                 runZeroMode = " runZeroMode=#{attributes['runZeroMode']}"
@@ -1458,7 +1451,7 @@ EOF
                 runZeroMode = ''
               end
               dst += <<EOF
-<pre>[twoville id=#{attributes['id']} width=#{attributes['width']} height=#{attributes['height']}#{runZeroMode}]#{code}[/twoville]</pre>
+<pre>[twoville id=#{attributes['id']} width=#{attributes['width']} height=#{attributes['height']} expandable=#{is_expandable}#{runZeroMode}]#{code}[/twoville]</pre>
 EOF
             else
               @twovilles << attributes['id']
@@ -1472,10 +1465,18 @@ EOF
               end
 
               dst += <<EOF
-<input type="submit"/>
 </form>
 <iframe id="twoville-frame-#{attributes['id']}" name="twoville-frame-#{attributes['id']}" src="" width="#{attributes['width']}" height="#{attributes['height']}" class="twoville-frame#{attributes.has_key?('class') ? " #{attributes['class']}" : ''}"></iframe>
 EOF
+
+              if is_expandable
+                dst += <<EOF
+<form style="display: none" id="twoville-expandable-form-#{attributes['id']}" action="#{@twovilleurl}" method="post" target="_blank">
+  <textarea name="src">#{code}</textarea>
+</form>
+<button class="expandable-link" data-form="twoville-expandable-form-#{attributes['id']}">expand</button>
+EOF
+              end
             end
 
           elsif command == 'madeup'
@@ -1493,6 +1494,8 @@ EOF
             code.gsub!(/</, '&lt;')
             code.gsub!(/>/, '&gt;')
 
+            is_expandable = !attributes.has_key?('expandable') || attributes['expandable'] != 'false'
+
             if @target == 'wordpress'
               if attributes.has_key?('runZeroMode')
                 runZeroMode = " runZeroMode=#{attributes['runZeroMode']}"
@@ -1500,14 +1503,14 @@ EOF
                 runZeroMode = ''
               end
               dst += <<EOF
-<pre>[mup id=#{attributes['id']} width=#{attributes['width']} height=#{attributes['height']}#{runZeroMode}]#{code}[/mup]</pre>
+<pre>[mup id=#{attributes['id']} width=#{attributes['width']} height=#{attributes['height']} expandable=#{is_expandable}#{runZeroMode}]#{code}[/mup]</pre>
 EOF
             else
               @mups << attributes['id']
               dst += <<EOF
 <form style="display: none" id="mup-form-#{attributes['id']}" target="mup-frame-#{attributes['id']}" action="#{@madeupurl}" method="post">
-<input type="hidden" name="embed" value="true">
-<textarea name="src">#{code}</textarea>
+  <input type="hidden" name="embed" value="true">
+  <textarea name="src">#{code}</textarea>
 EOF
 
               if attributes.has_key?('runZeroMode')
@@ -1521,10 +1524,18 @@ EOF
               end
 
               dst += <<EOF
-<input type="submit"/>
 </form>
 <iframe id="mup-frame-#{attributes['id']}" name="mup-frame-#{attributes['id']}" src="" width="#{attributes['width']}" height="#{attributes['height']}" class="madeup-frame#{attributes.has_key?('class') ? " #{attributes['class']}" : ''}"></iframe>
 EOF
+
+              if is_expandable
+                dst += <<EOF
+<form style="display: none" id="madeup-expandable-form-#{attributes['id']}" action="#{@madeupurl}" method="post" target="_blank">
+  <textarea name="src">#{code}</textarea>
+</form>
+<button class="expandable-link" data-form="madeup-expandable-form-#{attributes['id']}">expand</button>
+EOF
+              end
             end
 
           elsif command == 'quote'

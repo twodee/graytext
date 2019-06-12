@@ -33,6 +33,13 @@ $(document).ready(function() {
   $('a.lineveil').click(lineveil);
   $('.listveil * li').wrapInner('<span class="listveil"></span>');
   $('span.listveil').hide().before('<a href="#" onclick="listveilShow(this); return false;">...</a>');
+
+  $('.expandable-link').each(function(i, element) {
+    var formId = element.dataset.form;
+    element.onclick = function() {
+      document.getElementById(formId).submit();
+    };
+  });
 });
 
 function shuffle(list) {
