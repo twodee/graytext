@@ -1043,9 +1043,9 @@ EOF
             if attributes['app'] == 'puredata'
               # https://github.com/smokris/GetWindowID
               `open -a Pd-0.49-1.app #{inpath}`
+              sleep 2
               STDERR.puts "screencapture -l $(GetWindowID Pd '#{inpath}') '#{outpath}'"
               `screencapture -l $(GetWindowID Pd '#{basepath}') '#{outpath}'`
-              sleep 2
             else
               raise "I don\'t know #{attributes['app']}."
             end
