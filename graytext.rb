@@ -1036,7 +1036,11 @@ EOF
           inpath = attributes['src']
           basepath = File.basename(inpath)
           ext = attributes['ext']
-          outpath = "shots/#{basepath}.#{ext}"
+          if attributes.has_key?('id')
+            outpath = "shots/#{attributes['id']}.#{ext}"
+          else
+            outpath = "shots/#{basepath}.#{ext}"
+          end
           FileUtils.mkdir_p('shots')
 
           if !File.exists?(outpath) || File.mtime(outpath) < File.mtime(inpath)
