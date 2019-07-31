@@ -1409,7 +1409,7 @@ EOF
 
             if @target == 'wordpress'
               dst += <<EOF
-[deltaphone id=#{attributes['id']} width=#{attributes['width']} height=#{attributes['height']} expandable=#{is_expandable}]#{code}[/deltaphone]</pre>
+[deltaphone id=#{attributes['id']} width=#{attributes['width']} height=#{attributes['height']} expandable=#{is_expandable} compact=true]#{code}[/deltaphone]</pre>
 EOF
             else
               code.gsub!(/</, '&lt;')
@@ -1418,6 +1418,7 @@ EOF
               dst += <<EOF
 <form style="display: none" id="deltaphone-form-#{attributes['id']}" target="deltaphone-frame-#{attributes['id']}" action="#{@deltaphoneurl}" method="post">
   <textarea name="src">#{code}</textarea>
+  <input type="hidden" name="compact" value="true">
 </form>
 <iframe id="deltaphone-frame-#{attributes['id']}" name="deltaphone-frame-#{attributes['id']}" src="" width="#{attributes['width']}" height="#{attributes['height']}" class="deltaphone-frame#{attributes.has_key?('class') ? " #{attributes['class']}" : ''}"></iframe>
 EOF
