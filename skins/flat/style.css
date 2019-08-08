@@ -436,7 +436,7 @@ img.size-full {
 }
 
 code {
-  white-space: pre;
+  white-space: pre-wrap;
   background-color: #f7f7f9;
   padding: 2px 4px;
   border: 1px solid #e1e1e8;
