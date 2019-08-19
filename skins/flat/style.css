@@ -368,6 +368,12 @@ img.size-full {
   margin-right: auto;
 }
 
+.gray-center {
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+}
+
 .gray-center-10 {
   display: block;
   margin-left: auto;
@@ -387,6 +393,13 @@ img.size-full {
   margin-left: auto;
   margin-right: auto;
   width: 30%;
+}
+
+.gray-center-40 {
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+  width: 40%;
 }
 
 .gray-center-25 {
