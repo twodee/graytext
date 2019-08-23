@@ -10,17 +10,15 @@ is_parent = true
 $log = open("#{ENV['HOME']}/.junk/gray.log", 'a')
 
 if port_open? 4567
-  puts "hi"
+  puts "Starting new server..."
   pid = Process.fork
   if pid.nil?
     is_parent = false
 
     require 'sinatra'
  
-    # $stderr.reopen(File.new('/dev/null', 'w'))
-    # $stdout.reopen(File.new('/dev/null', 'w'))
-    $stderr.reopen(File.new("#{ENV['HOME']}/err", 'w'))
-    $stdout.reopen(File.new("#{ENV['HOME']}/out", 'w'))
+    $stderr.reopen(File.new("#{ENV['HOME']}/.junk/wwwgray_err", 'w'))
+    $stdout.reopen(File.new("#{ENV['HOME']}/.junk/wwwgray_out", 'w'))
     $path = nil
 
     get %r{/(.+)} do |file|
@@ -50,7 +48,7 @@ if port_open? 4567
     Process.detach(pid)
   end
 else
-  puts 'foo'
+  puts 'Redirecting existing server...'
 end
 
 if is_parent && ARGV.size > 0
