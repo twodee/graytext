@@ -958,16 +958,18 @@ EOF
           end
           
         elsif command == "frame"
-          s = attributes.map { |key, value| ['src', 'autosize'].member?(key) ? '' : " #{key}=\"#{value}\"" }.join
+          s = attributes.map { |key, value| ['src', 'autosize', 'class'].member?(key) ? '' : %Q{ #{key}="#{value}"} }.join
+          classes = attributes.has_key?('class') ? attributes['class'].split(/\s+/) : []
+
           if attributes.has_key?('autosize') && attributes['autosize'] == 'true'
             if attributes.has_key?('id')
               if @target == 'wordpress'
                 autosize_attribute = " autosize=\"true\""
               else
-                autosize_attribute = " onload=\"autosize('#{attributes['id']}')\"";
+                classes << 'autosize'
               end
             else
-              STDERR.puts "Autosizes need IDs."
+              STDERR.puts "Autosize need IDs."
               exit 1
             end
           else
@@ -980,7 +982,7 @@ EOF
             end
             dst += "[frame src=\"#{src}\"#{s}#{autosize_attribute}]"
           else
-            dst += "<iframe scrolling=\"auto\" src=\"#{attributes['src']}\"#{s}#{autosize_attribute} frameborder=\"0\"></iframe>"
+            dst += %Q{<iframe class="#{classes.join(' ')}" scrolling="auto" src="#{attributes['src']}"#{s}#{autosize_attribute} frameborder="0"></iframe>}
           end
 
         elsif command == "youtube"
@@ -1409,16 +1411,26 @@ EOF
 
             if @target == 'wordpress'
               dst += <<EOF
-[deltaphone id=#{attributes['id']} width=#{attributes['width']} height=#{attributes['height']} expandable=#{is_expandable} compact=true]#{code}[/deltaphone]</pre>
+[deltaphone id=#{attributes['id']} width=#{attributes['width']} height=#{attributes['height']} expandable=#{is_expandable} compact=true editorwidth=300]#{code}[/deltaphone]</pre>
 EOF
             else
+              is_compact = @skin != 'slides'
+
               code.gsub!(/</, '&lt;')
               code.gsub!(/>/, '&gt;')
+
+              if attributes.has_key?('editorWidth')
+                editor_input = %Q{<input type="hidden" name="editorwidth" value="#{attributes['editorWidth']}">}
+              else
+                editor_input = ''
+              end
+
               @deltaphones << attributes['id']
               dst += <<EOF
 <form style="display: none" id="deltaphone-form-#{attributes['id']}" target="deltaphone-frame-#{attributes['id']}" action="#{@deltaphoneurl}" method="post">
   <textarea name="src">#{code}</textarea>
-  <input type="hidden" name="compact" value="true">
+  <input type="hidden" name="compact" value="#{is_compact}">
+  #{editor_input}
 </form>
 <iframe id="deltaphone-frame-#{attributes['id']}" name="deltaphone-frame-#{attributes['id']}" src="" width="#{attributes['width']}" height="#{attributes['height']}" class="deltaphone-frame#{attributes.has_key?('class') ? " #{attributes['class']}" : ''}"></iframe>
 EOF
@@ -1560,6 +1572,12 @@ EOF
             dst += "<div class=\"indented grayblock\">" if is_indented
             dst += "<span class=\"toggler\">#{attributes['title']}</span>"
             classes = attributes.has_key?('class') ? ' ' + attributes['class'] : ''
+
+            is_delayed = attributes.has_key?('delay') && attributes['delay'] == 'true'
+            if is_delayed
+              classes = "#{classes} hide-delay"
+            end
+
             dst += "<div class=\"togglee#{classes}\">"
             if @tokens[@i].type == :SEPARATOR
               @i += 1

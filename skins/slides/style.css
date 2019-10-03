@@ -20,6 +20,22 @@ html {
   margin-left: 20px;
 }
 
+#whole {
+  background: white;
+  box-shadow: 5px 0 15px 0px #AAAAAA,
+             -5px 0 15px 0px #AAAAAA;
+}
+
+.blink {
+  animation: blinker 1.0s step-start infinite;
+}
+
+@keyframes blinker {
+  50% {
+    opacity: 0;
+  }
+}
+
 body {
   background: #FFFFFF;
   /* font-family: 'EB Garamond'; */
@@ -294,6 +310,75 @@ img.size-full {
   margin-right: auto;
 }
 
+.gray-center {
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.gray-center-10 {
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+  width: 10%;
+}
+
+.gray-center-20 {
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+  width: 20%;
+}
+
+.gray-center-30 {
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+  width: 30%;
+}
+
+.gray-center-40 {
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+  width: 40%;
+}
+
+.gray-center-25 {
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+  width: 25%;
+}
+
+.gray-center-50 {
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+  width: 50%;
+}
+
+.gray-center-60 {
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+  width: 60%;
+}
+
+.gray-center-75 {
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+  width: 75%;
+}
+
+.gray-center-100 {
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+  width: 100%;
+}
+
 .graysignature {
   display: block;
   margin-left: 400px;
@@ -409,7 +494,8 @@ p {
 }
 
 .gray-slide {
-  position: absolute;
+  /* TODO used to have absolute, but it was shifted in Chrome. Why? */
+  position: fixed;
   font-size: 36pt;
   /* transform: translateX(-100%); */
   opacity: 0;

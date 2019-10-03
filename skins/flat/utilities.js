@@ -40,6 +40,26 @@ $(document).ready(function() {
       document.getElementById(formId).submit();
     };
   });
+
+  $('.togglee').not('.hide-delay').css('display', 'none');
+  $('.toggler').click(function() {
+    if ($(this).next().css('display') == 'none') {
+      $(this).next().slideDown();
+    } else {
+      $(this).next().slideUp();
+    }
+    return false;
+  });
+
+  $('.autosize').on('load', function() {
+    let element = $(this);
+    element.height(element.contents().outerHeight());
+    element.width(element.contents().outerWidth());
+    let parent = element.parent();
+    if (parent.hasClass('togglee') && parent.hasClass('hide-delay')) {
+      parent.slideUp();
+    }
+  });
 });
 
 function shuffle(list) {
@@ -66,18 +86,6 @@ $(function() {
 
   $('.scramble').click(function() {
     scramble($(this).parent().prev()[0]);
-  });
-});
-
-$(function() {
-  $('.togglee').css('display', 'none');
-  $('.toggler').click(function() {
-    if ($(this).next().css('display') == 'none') {
-      $(this).next().slideDown();
-    } else {
-      $(this).next().slideUp();
-    }
-    return false;
   });
 });
 

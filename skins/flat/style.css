@@ -27,6 +27,16 @@ html {
              -5px 0 15px 0px #AAAAAA;
 }
 
+.blink {
+  animation: blinker 1.0s step-start infinite;
+}
+
+@keyframes blinker {
+  50% {
+    opacity: 0;
+  }
+}
+
 body {
   background: rgb(85%, 85%, 85%);
   /* background: white; */
