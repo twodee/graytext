@@ -3,6 +3,8 @@
 require 'tempfile'
 
 module Graytext
+  CODE_ENVIRONMENTS = ['code', 'twoville', 'deltaphone', 'madeup']
+
   def self.configure path
     # STDERR.puts "path: #{path}"
     dir = File.expand_path(path)
@@ -1148,7 +1150,9 @@ EOF
         else
           pair_string = attributes.map { |key, value| " #{key}=\"#{value}\"" }.join
 
-          if command != 'code' || !attributes.has_key?('file')
+          # Verify that the next token is a closing ].
+          if !CODE_ENVIRONMENTS.member?(command) || !attributes.has_key?('file')
+            STDERR.puts "#{command}  ->  #{attributes}"
             if @tokens[@i].type == :EOL
               @i += 1
             elsif @tokens[@i].type == :SEPARATOR
@@ -1451,10 +1455,14 @@ EOF
               end
             end
 
-            code = ''
-            while @i < @tokens.length && (@tokens[@i].type != :RIGHT_BRACKET)
-              code += @tokens[@i].text
-              @i += 1
+            if attributes.has_key?('file')
+              code = IO.read(attributes['file'])
+            else
+              code = ''
+              while @i < @tokens.length && (@tokens[@i].type != :RIGHT_BRACKET)
+                code += @tokens[@i].text
+                @i += 1
+              end
             end
             code.gsub!(/</, '&lt;')
             code.gsub!(/>/, '&gt;')
