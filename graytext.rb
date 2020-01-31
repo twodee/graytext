@@ -931,7 +931,7 @@ EOF
               end
             end
 
-            dst += "  <tr>\n    <t#{cell_letter} style=\"#{get_cell_style attributes, icolumn}\">\n"
+            dst += "  <tr style=\"vertical-align: top\">\n    <t#{cell_letter} style=\"#{get_cell_style attributes, icolumn}\">\n"
             while @tokens[@i].type != :EOL
               while @tokens[@i].type != :SEPARATOR && @tokens[@i].type != :EOL
                 dst += content false
