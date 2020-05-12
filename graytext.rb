@@ -903,7 +903,8 @@ EOF
           dst += '<br>'
 
         elsif command == "table"
-          dst += "<table>\n"
+          style = attributes.has_key?('style') ? " style=\"#{attributes['style']}\"" : ''
+          dst += "<table#{style}>\n"
           if @tokens[@i].type == :EOL
             @i += 1
           else
