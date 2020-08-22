@@ -3,7 +3,7 @@
 require 'tempfile'
 
 module Graytext
-  CODE_ENVIRONMENTS = ['code', 'twoville', 'deltaphone', 'madeup']
+  CODE_ENVIRONMENTS = ['code', 'twoville', 'deltaphone', 'madeup', 'madeup2']
 
   def self.configure path
     # STDERR.puts "path: #{path}"
@@ -154,7 +154,7 @@ module Graytext
       end
 
       if @src[@i] == "\n"
-        if @id == 'code' || @id == 'lineveil' || @id == 'madeup' || @id == 'twoville' || @id == 'deltaphone' || @id == 'css' || @id == 'mup' || @id == 'latex' || @id == 'texmath' || @id == 'mathblock' || @id == 'mathspan' # Any code blocks
+        if @id == 'code' || @id == 'lineveil' || @id == 'madeup' || @id == 'madeup2' || @id == 'twoville' || @id == 'deltaphone' || @id == 'css' || @id == 'mup' || @id == 'latex' || @id == 'texmath' || @id == 'mathblock' || @id == 'mathspan' # Any code blocks
           @states[-1] = :blockcode
         elsif @id == 'block' || @id == 'listveil' || @id == 'slide'
           @states[-1] = :linestart
@@ -402,6 +402,7 @@ module Graytext
       @config = config
       @root = nil
       @madeupurl = 'https://madeup.xyz'
+      @madeup2url = 'https://madeup.twodee.org'
       @twovilleurl = 'https://twodee.org/twoville/index.php'
       @deltaphoneurl = 'https://twodee.org/deltaphone/index.php'
       @maxmupframes = 8
@@ -879,6 +880,10 @@ EOF
             @madeupurl = attributes['madeupurl']
           end
 
+          if attributes.has_key? 'madeup2url'
+            @madeup2url = attributes['madeup2url']
+          end
+
           if attributes.has_key? 'twovilleurl'
             @twovilleurl = attributes['twovilleurl']
           end
@@ -1214,7 +1219,8 @@ EOF
             else
               if attributes.has_key? 'lang'
                 if attributes['lang'] == 'madeup'
-                  IO.popen("coderay -#{attributes['lang']} -div", 'r+') do |pipe|
+                  # IO.popen("coderay -#{attributes['lang']} -div", 'r+') do |pipe|
+                  IO.popen("pygmentize -l /home/twodee/checkouts/madeup2/utility/pygments_madeup.py:MadeupLexer -x -f html", 'r+') do |pipe|
                     pipe.puts code
                     pipe.close_write
                     code = pipe.read
@@ -1500,6 +1506,65 @@ EOF
   <textarea name="src">#{code}</textarea>
 </form>
 <button class="expandable-link" data-form="twoville-expandable-form-#{attributes['id']}">expand</button>
+EOF
+              end
+            end
+
+          elsif command == 'madeup2'
+            ['id', 'width', 'height'].each do |key|
+              if !attributes.has_key? key
+                raise "madeup snippet must have #{key} attribute!"
+              end
+            end
+
+            code = ''
+            while @i < @tokens.length && (@tokens[@i].type != :RIGHT_BRACKET)
+              code += @tokens[@i].text
+              @i += 1
+            end
+            code.gsub!(/</, '&lt;')
+            code.gsub!(/>/, '&gt;')
+
+            is_expandable = !attributes.has_key?('expandable') || attributes['expandable'] != 'false'
+
+            if @target == 'wordpress'
+              if attributes.has_key?('runZeroMode')
+                runZeroMode = " runZeroMode=#{attributes['runZeroMode']}"
+              else
+                runZeroMode = ''
+              end
+              dst += <<EOF
+<pre>[madeup id=#{attributes['id']} width=#{attributes['width']} height=#{attributes['height']} expandable=#{is_expandable}#{runZeroMode}]#{code}[/madeup]</pre>
+EOF
+            else
+              @mups << attributes['id']
+              dst += <<EOF
+<form style="display: none" id="mup-form-#{attributes['id']}" target="mup-frame-#{attributes['id']}" action="#{@madeup2url}" method="post">
+  <input type="hidden" name="embed" value="true">
+  <textarea name="src">#{code}</textarea>
+EOF
+
+              if attributes.has_key?('runZeroMode')
+                dst += %Q{<input type="hidden" name="runZeroMode" value="#{attributes['runZeroMode']}">}
+              end
+
+              if @skin == 'slides'
+                dst += <<EOF
+<input type="hidden" name="isPresenting" value="true">
+EOF
+              end
+
+              dst += <<EOF
+</form>
+<iframe id="mup-frame-#{attributes['id']}" name="mup-frame-#{attributes['id']}" src="" width="#{attributes['width']}" height="#{attributes['height']}" class="madeup-frame#{attributes.has_key?('class') ? " #{attributes['class']}" : ''}"></iframe>
+EOF
+
+              if is_expandable
+                dst += <<EOF
+<form style="display: none" id="madeup-expandable-form-#{attributes['id']}" action="#{@madeup2url}" method="post" target="_blank">
+  <textarea name="src">#{code}</textarea>
+</form>
+<button class="expandable-link" data-form="madeup-expandable-form-#{attributes['id']}">expand</button>
 EOF
               end
             end
