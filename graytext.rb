@@ -516,7 +516,7 @@ EOF
         end
         @i += 1
         dst += "#{' ' * 2 * (indent + 1)}<li>"
-        dst += '<input type="checkbox" class="gray-todo-checkbox">' if list_type == :CHECKBOX
+        dst += '<label><input type="checkbox" class="gray-todo-checkbox">' if list_type == :CHECKBOX
         dst += content
         if @tokens[@i].type == :EOL
           @i += 1
@@ -532,6 +532,7 @@ EOF
           dst += list indent + 1
           dst += ' ' * 2 * indent
         end
+        dst += "</label" if list_type == :CHECKBOX
         dst += "</li>\n"
       end
       dst += ' ' * 2 * indent
