@@ -1519,11 +1519,16 @@ EOF
               end
             end
 
-            code = ''
-            while @i < @tokens.length && (@tokens[@i].type != :RIGHT_BRACKET)
-              code += @tokens[@i].text
-              @i += 1
+            if attributes.has_key?('file')
+              code = IO.read(attributes['file'])
+            else
+              code = ''
+              while @i < @tokens.length && (@tokens[@i].type != :RIGHT_BRACKET)
+                code += @tokens[@i].text
+                @i += 1
+              end
             end
+
             code.gsub!(/</, '&lt;')
             code.gsub!(/>/, '&gt;')
 
@@ -1542,7 +1547,7 @@ EOF
               @mups << attributes['id']
               dst += <<EOF
 <form style="display: none" id="mup-form-#{attributes['id']}" target="mup-frame-#{attributes['id']}" action="#{@madeup2url}" method="post">
-  <input type="hidden" name="embed" value="true">
+  <input type="hidden" name="isEmbedded" value="true">
   <textarea name="src">#{code}</textarea>
 EOF
 
