@@ -22,9 +22,9 @@ html {
 }
 
 #whole {
-  background: white;
-  box-shadow: 5px 0 15px 0px #AAAAAA,
-             -5px 0 15px 0px #AAAAAA;
+  width: 840px;
+  margin: 0 auto;
+  padding: 0 20px;
 }
 
 .blink {
@@ -39,23 +39,15 @@ html {
 
 body {
   background: rgb(85%, 85%, 85%);
-  /* background: white; */
-  /* font-family: 'EB Garamond'; */
-  /* font-family: 'News Cycle'; */
-  /* font-family: 'Source Sans Pro'; */
   font-family: 'Merriweather';
   letter-spacing: 0.01rem;
   font-size: 1.7rem;
   line-height: 1.55em;
   color: #555555;
   margin: 0;
-  /* margin-right: 20px; */
-  margin-left: auto;
-  margin-right: auto;
-  width: 720px;
 
-  /* I can't have this here if I want floats to wrap? */
-  /* width: 960px; */
+  /* Stop rubber-banding. */
+  overscroll-behavior-y: none;
 }
 
 h1 {
@@ -63,7 +55,7 @@ h1 {
   font-family: 'Contrail One', sans;
   font-size: 6.5rem;
   line-height: 1em;
-  /* margin-top: 10px; */
+  margin-top: 10px;
   margin-bottom: 25px;
   font-weight: bold;
 }
@@ -127,14 +119,30 @@ h6 {
 }
 
 .bubble {
-  width: 100%;
   display: block;
-  /* background: #ffffff; */
-  /* box-shadow: rgba(0,0,0,0.2) 0px 2px 3px, inset rgba(0,0,0,0.2) 0px -1px 2px; */
-  /* border-radius: 20px; */
   padding: 20px;
   margin: 0px 0px;
   margin-bottom: 20px;
+  background: #ffffff;
+  box-shadow: rgba(0,0,0,0.2) 0px 2px 3px, inset rgba(0,0,0,0.2) 0px -1px 2px;
+  border-radius: 5px;
+}
+
+.comments-bubble {
+  margin-bottom: 0;
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+header {
+  margin: 0;
+  box-sizing: border-box;
+  min-width: 330px;
+}
+
+header > .bubble {
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
 }
 
 .hcenter {
@@ -144,72 +152,47 @@ h6 {
   text-align: center;
 }
 
+.columns {
+  display: flex;
+  justify-content: space-between;
+  flex-direction: row;
+  flex-wrap: wrap;
+}
+
 .column {
-  float: left;
-  padding: 0px;
-  margin-left: 20px;
-  margin-right: 0px;
+  flex: 1 1 0;
+  min-width: 0;
 }
 
-.left2 {
-  width: 450px;
+.left-column {
+  margin-right: 10px;
 }
 
-.right2 {
-  width: 450px;
+.right-column {
+  margin-left: 10px;
 }
 
-.left3 {
-  width: 685px;
+img, iframe {
+  max-width: 100%;
 }
 
-.right1 {
-  width: 215px;
-}
-
-.left4 {
-  width: 680px;
-  clear: both;
-  margin: 0;
-  margin-left: 20px;
-  margin-right: 20px;
-}
-
-.all4 {
-  width: 920px;
-  clear: both;
-  margin: 0;
-  padding-left: 40px;
-}
-
-@media (max-width: 959px) {
-
-  .all4 {
+@media (max-width: 839px) {
+  #whole {
     width: 100%;
   }
+}
 
-  img, iframe {
-    max-width: 100%;
+@media (max-width: 660px) {
+  .column {
+    flex-basis: 100%;
   }
 
-  body {
-    width: 100%;
+  .left-column {
+    margin-right: 0;
   }
 
-  .left4 {
-    width: 100%;
-    padding-left: 20px;
-    padding-right: 20px;
-    margin-left: auto;
-    margin-right: auto;
-  }
-
-  .left2, .right2, .left3, .right1 {
-    width: 100%;
-    padding-left: 20px;
-    padding-right: 20px;
-    margin-left: auto;
-    margin-right: auto;
+  .right-column {
+    margin-left: 0;
   }
 }
 
@@ -239,6 +222,10 @@ a, .toggler {
   cursor: pointer;
 }
 
+a:hover, .toggler:hover {
+  text-decoration: underline;
+}
+
 /*
 ul { 
   list-style-type: none;
@@ -265,8 +252,12 @@ ul li:before {
   display: inline-block;
   text-decoration: none;
   color: rgb(70%, 50%, 50%);
-  padding-left: 10px;
-  padding-right: 10px;
+  padding-left: 20px;
+  padding-right: 20px;
+}
+
+.navlist li a:hover {
+  text-decoration: underline;
 }
 
 .navlist li form {
@@ -274,7 +265,7 @@ ul li:before {
 }
 
 .navlist li:after {
-  content: '|'
+  content: ' ';
 }
 
 .navlist li:first-child a {
@@ -405,18 +396,18 @@ img.size-full {
   width: 30%;
 }
 
-.gray-center-40 {
-  display: block;
-  margin-left: auto;
-  margin-right: auto;
-  width: 40%;
-}
-
 .gray-center-25 {
   display: block;
   margin-left: auto;
   margin-right: auto;
   width: 25%;
+}
+
+.gray-center-40 {
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+  width: 40%;
 }
 
 .gray-center-50 {
@@ -578,7 +569,7 @@ ul.gray-todo li {
   position: absolute;
   right: 5px;
   margin-right: 100%;
-  top: 4px;
+  top: 2px;
 }
 
 .gray-wrap {
