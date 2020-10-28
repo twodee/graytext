@@ -1490,6 +1490,7 @@ EOF
               @twovilles << attributes['id']
               dst += <<EOF
 <form style="display: none" id="twoville-form-#{attributes['id']}" target="twoville-frame-#{attributes['id']}" action="#{@twovilleurl}" method="post">
+<input type="hidden" name="isEmbedded" value="true">
 <textarea name="src">#{code}</textarea>
 EOF
 
