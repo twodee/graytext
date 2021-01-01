@@ -6,6 +6,8 @@ Description: A theme for me in my 30s.
 Version: 0.1
 */
 
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300&display=swap');
+
 html {
   box-sizing: border-box;
   margin: 0;
@@ -39,10 +41,12 @@ html {
 
 body {
   background: rgb(85%, 85%, 85%);
-  font-family: 'Merriweather';
-  letter-spacing: 0.01rem;
+  /* font-family: 'Merriweather'; */
+  /* line-height: 1.55em; */
+  font-family: 'IBM Plex Sans', sans-serif;
+  line-height: 1.4em;
+  /* letter-spacing: 0.01rem; */
   font-size: 1.7rem;
-  line-height: 1.55em;
   color: #555555;
   margin: 0;
 
