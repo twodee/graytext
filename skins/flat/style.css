@@ -6,7 +6,7 @@ Description: A theme for me in my 30s.
 Version: 0.1
 */
 
-@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;500&display=swap');
 
 html {
   box-sizing: border-box;
@@ -44,6 +44,7 @@ body {
   /* font-family: 'Merriweather'; */
   /* line-height: 1.55em; */
   font-family: 'IBM Plex Sans', sans-serif;
+  font-weight: 300;
   line-height: 1.4em;
   /* letter-spacing: 0.01rem; */
   font-size: 1.7rem;
@@ -180,6 +181,10 @@ img, iframe {
   max-width: 100%;
 }
 
+.category-list {
+  padding-left: 20px;
+}
+
 @media (max-width: 839px) {
   #whole {
     width: 100%;
@@ -221,7 +226,7 @@ img, iframe {
 
 a, .toggler {
   text-decoration: none;
-  font-weight: bold;
+  font-weight: 500;
   color: #483d8b;
   cursor: pointer;
 }
