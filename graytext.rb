@@ -403,7 +403,7 @@ module Graytext
       @root = nil
       @madeupurl = 'https://madeup.xyz'
       @madeup2url = 'https://madeup.twodee.org'
-      @twovilleurl = 'https://twoville.twodee.org'
+      @twovilleurl = 'https://twoville.org'
       @deltaphoneurl = 'https://twodee.org/deltaphone/index.php'
       @maxmupframes = 8
       @skin = 'flat'
