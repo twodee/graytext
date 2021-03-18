@@ -200,7 +200,7 @@ module Graytext
           @token_so_far << @src[@i]
           @i += 1
         end
-        if @token_so_far =~ /^[A-Za-z][A-Za-z0-9]+$/
+        if @token_so_far =~ /^[A-Za-z][A-Za-z0-9]*$/
           Token.new :IDENTIFIER, @token_so_far
         else
           Token.new :UNQUOTED_VALUE, @token_so_far
@@ -289,6 +289,8 @@ module Graytext
           Token.new :RIGHT_BRACKET, @token_so_far
         when '-'
           get_token_after_dash
+        when '$'
+          get_token_after_dollar
         when '\\'
           get_token_after_backslash
         when '|'
@@ -328,6 +330,16 @@ module Graytext
       end
     end
 
+    def get_token_after_dollar
+      STDERR.puts('after dollar')
+      if @i < @src.length && @src[@i] == '*'
+        @i += 1
+        Token.new :DOLLARSTAR, '-?*'
+      else
+        get_token_content
+      end
+    end
+
     def get_token_after_dash
       if @i + 1 < @src.length && @src[@i] == '-' && @src[@i + 1] == '-'
         @i += 2
@@ -344,6 +356,9 @@ module Graytext
       if @i < @src.length && @src[@i] == '*'
         @i += 1
         Token.new :STARSTAR, @token_so_far
+      elsif @i < @src.length && @src[@i] == '$'
+        @i += 1
+        Token.new :STARDOLLAR, @token_so_far
       elsif @i + 1 < @src.length && @src[@i] == '?' && @src[@i + 1] == '-'
         @i += 2
         Token.new :STAROVER, '*?-'
@@ -371,7 +386,7 @@ module Graytext
     end
 
     def get_token_content
-      while @i < @src.length && @src[@i] != "\n" && @src[@i] != '`' && @src[@i] != '*' && @src[@i] != '[' && @src[@i] != '-' && (@states[-1] != :table || @src[@i] != '|')
+      while @i < @src.length && @src[@i] != "\n" && @src[@i] != '`' && @src[@i] != '`' && @src[@i] != '*' && @src[@i] != '[' && @src[@i] != '-' && (@states[-1] != :table || @src[@i] != '|')
         # Skip
         if @src[@i] == '\\' && @i + 1 < @src.length
           @i += 1
@@ -429,6 +444,7 @@ module Graytext
       @is_in_backtick = false
       @is_in_asterisk = false
       @is_in_starstar = false
+      @is_in_stardollar = false
       @is_in_starover = false
 
       @i = 0
@@ -611,7 +627,7 @@ EOF
     end
 
     def first_of_content? type
-      ([:CONTENT, :LEFT_BRACKET, :COMMENT].member? type) || (type == :BACKTICK && !@is_in_backtick) || (type == :STAR && !@is_in_asterisk) || (type == :STARSTAR && !@is_in_starstar) || (type == :STAROVER && !@is_in_starover)|| (type == :EMDASH)
+      ([:CONTENT, :LEFT_BRACKET, :COMMENT].member? type) || (type == :BACKTICK && !@is_in_backtick) || (type == :STAR && !@is_in_asterisk) || (type == :STARSTAR && !@is_in_starstar) || (type == :STARDOLLAR && !@is_in_stardollar) || (type == :STAROVER && !@is_in_starover)|| (type == :EMDASH)
     end
 
     def first_of_line? type
@@ -742,6 +758,18 @@ EOF
           end
           @is_in_starover = false
           dst += '</span>'
+        elsif @tokens[@i].type == :STARDOLLAR
+          @i += 1
+          dst += '<span class="mathjax">$'
+          @is_in_stardollar = true
+          dst += content
+          if @tokens[@i].type == :DOLLARSTAR
+            @i += 1
+          else
+            raise "expected dollarstar, found #{@tokens[@i].inspect}"
+          end
+          @is_in_dollarstar = false
+          dst += '$</span>'
         elsif @tokens[@i].type == :STARSTAR
           @i += 1
           dst += '<b>'
@@ -1158,8 +1186,10 @@ EOF
           pair_string = attributes.map { |key, value| " #{key}=\"#{value}\"" }.join
 
           # Verify that the next token is a closing ].
-          if !CODE_ENVIRONMENTS.member?(command) || !attributes.has_key?('file')
-            STDERR.puts "#{command}  ->  #{attributes}"
+          # Allow inline forms of block commands.
+          if (command != 'mathspan' && !CODE_ENVIRONMENTS.member?(command)) ||
+             (command != 'mathspan' && !attributes.has_key?('file')) ||
+             (command == 'mathspan' && !attributes.has_key?('e'))
             if @tokens[@i].type == :EOL
               @i += 1
             elsif @tokens[@i].type == :SEPARATOR
@@ -1304,14 +1334,18 @@ EOF
 
           elsif command == 'mathspan'
             dst += '<span class="mathjax">$'
-            while @i < @tokens.length && @tokens[@i].type == :CODE
-              dst += @tokens[@i].text
-              @i += 1
-
-              if @tokens[@i].type == :EOL
+            if attributes.has_key?('e')
+              dst += attributes['e']
+            else
+              while @i < @tokens.length && @tokens[@i].type == :CODE
+                dst += @tokens[@i].text
                 @i += 1
-              else
-                raise "expected EOL after mathspan, found #{@tokens[@i].type}"
+
+                if @tokens[@i].type == :EOL
+                  @i += 1
+                else
+                  raise "expected EOL after mathspan, found #{@tokens[@i].type}"
+                end
               end
             end
             dst += '$</span>'
