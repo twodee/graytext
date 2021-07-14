@@ -421,7 +421,7 @@ module Graytext
       @twovilleurl = 'https://twoville.org'
       @deltaphoneurl = 'https://twodee.org/deltaphone/index.php'
       @maxmupframes = 8
-      @skin = 'flat'
+      @skin = 'vanilla'
       @styles = Hash.new
       @counters = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
       @mups = []
