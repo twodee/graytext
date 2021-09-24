@@ -6,10 +6,12 @@ Description: A theme for me in my 30s.
 Version: 0.1
 */
 
+@import url('https://fonts.googleapis.com/css2?family=Actor:wght@400&display=swap');
+
 html {
   box-sizing: border-box;
-  margin: 0;
-  height: 100%;
+  /* margin: 0; */
+  /* height: 100vh; */
 }
 
 *, *:before, *:after {
@@ -40,10 +42,10 @@ body {
   background: #FFFFFF;
   /* font-family: 'EB Garamond'; */
   /* font-family: 'News Cycle'; */
-  font-family: 'Source Sans Pro';
-  color: #000000;
+  font-family: 'Actor', sans-serif;
+  color: #444444;
   margin: 0;
-  height: 100%;
+  height: 100vh;
   overflow: hidden;
 
   /* I can't have this here if I want floats to wrap? */
@@ -69,7 +71,7 @@ h2 {
   margin-top: 5px;
   margin-bottom: 0px;
   color: rgb(65%, 75%, 85%);
-  font-family: 'Oswald', sans;
+  font-family: 'Contrail One', sans;
   font-size: 20pt;
 }
 
@@ -180,6 +182,24 @@ a {
   text-decoration: none;
   font-weight: bold;
   color: #483d8b;
+}
+
+ul {
+  list-style-type: none;
+}
+
+ul > li::before {
+  content: "▶";
+  padding-right: 10px;
+  /* color: cornflowerblue; */
+  color: rgb(55%, 65%, 75%);
+  font-size: 0.4em;
+  display: inline-block;
+  vertical-align: middle;
+}
+
+ul {
+  padding-left: 50px;
 }
 
 /*
@@ -500,9 +520,24 @@ p {
   /* transform: translateX(-100%); */
   opacity: 0;
   top: 0;
-  bottom: 0;
+  /* bottom: 0; */
   left: 0;
-  right: 0;
+  /* right: 0; */
+  width: 100%;
+  height: 100vh;
+}
+
+.gray-slide {
+  display: flex;
+  flex-direction: column;
+}
+
+.horizontal-center {
+  align-items: center;
+}
+
+.vertical-center {
+  justify-content: center;
 }
 
 /* .vcenterparent { */
