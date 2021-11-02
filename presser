@@ -41,7 +41,7 @@ def publish(gray, html, config, oauthor)
       url += "/#{config['pid']}"
     end
 
-    response = oauthor.post_json(url, parameters)
+    response = oauthor.post(url, parameters)
 
     if !config.has_key?('pid')
       publish = JSON.parse(response.body)
