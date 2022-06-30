@@ -55,7 +55,7 @@ body {
   overscroll-behavior-y: none;
 }
 
-h1 {
+h1.front {
   color: rgb(50%, 60%, 70%);
   font-family: 'Contrail One', sans;
   font-size: 6.5rem;
